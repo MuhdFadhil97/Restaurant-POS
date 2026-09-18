@@ -138,3 +138,24 @@ export function CalendarIcon(props: SVGProps<SVGSVGElement>) {
     </Icon>
   );
 }
+
+export function BellIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <path d="M6 10a6 6 0 0 1 12 0c0 4 1.5 5.5 2 6H4c.5-.5 2-2 2-6Z" />
+      <path d="M10 20a2 2 0 0 0 4 0" />
+    </Icon>
+  );
+}
+
+export function WarehouseIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <path d="M3 21V10l9-6 9 6v11" />
+      <path d="M3 21h18" />
+      <path d="M8 21v-6h8v6" />
+      <path d="M8 12h.01" />
+      <path d="M16 12h.01" />
+    </Icon>
+  );
+}

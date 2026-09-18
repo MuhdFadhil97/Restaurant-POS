@@ -5,6 +5,7 @@ import { useOutletStore } from "@/store/outletStore";
 import { useUiStore } from "@/store/uiStore";
 import { useOutlets } from "@/api/outlets";
 import { Select } from "@/components/ui";
+import { NotificationBell } from "@/features/notifications/NotificationBell";
 import {
   BoxIcon,
   CalendarIcon,
@@ -18,6 +19,7 @@ import {
   LogoutIcon,
   ReceiptIcon,
   UsersIcon,
+  WarehouseIcon,
 } from "@/components/icons";
 
 const navItems = [
@@ -25,6 +27,7 @@ const navItems = [
   { to: "/transactions", label: "Transactions", icon: ReceiptIcon, roles: ["ADMIN", "MANAGER", "CASHIER"] },
   { to: "/kds", label: "Kitchen", icon: ChefHatIcon, roles: ["ADMIN", "MANAGER", "CASHIER", "KITCHEN"] },
   { to: "/products", label: "Products", icon: BoxIcon, roles: ["ADMIN", "MANAGER"] },
+  { to: "/inventory", label: "Inventory", icon: WarehouseIcon, roles: ["ADMIN", "MANAGER"] },
   { to: "/customers", label: "Customers", icon: UsersIcon, roles: ["ADMIN", "MANAGER", "CASHIER"] },
   { to: "/reports", label: "Reports", icon: ChartBarIcon, roles: ["ADMIN", "MANAGER"] },
   { to: "/my-shift", label: "My Shift", icon: ClockIcon, roles: ["ADMIN", "MANAGER", "CASHIER", "KITCHEN"] },
@@ -106,18 +109,21 @@ export function AppLayout() {
       <div className="flex-1 flex flex-col overflow-hidden">
         <header className="h-14 shrink-0 bg-white border-b border-gray-200 flex items-center justify-between px-6">
           <div className="text-sm text-gray-500">Outlet</div>
-          <div className="w-64">
-            {outlets && outlets.length > 0 ? (
-              <Select value={activeOutletId ?? ""} onChange={(e) => setActiveOutlet(Number(e.target.value))}>
-                {outlets.map((o) => (
-                  <option key={o.id} value={o.id}>
-                    {o.name}
-                  </option>
-                ))}
-              </Select>
-            ) : (
-              <span className="text-sm text-gray-400">No outlets assigned</span>
-            )}
+          <div className="flex items-center gap-4">
+            <NotificationBell />
+            <div className="w-64">
+              {outlets && outlets.length > 0 ? (
+                <Select value={activeOutletId ?? ""} onChange={(e) => setActiveOutlet(Number(e.target.value))}>
+                  {outlets.map((o) => (
+                    <option key={o.id} value={o.id}>
+                      {o.name}
+                    </option>
+                  ))}
+                </Select>
+              ) : (
+                <span className="text-sm text-gray-400">No outlets assigned</span>
+              )}
+            </div>
           </div>
         </header>
         <main className="flex-1 overflow-y-auto p-6 bg-gray-50">

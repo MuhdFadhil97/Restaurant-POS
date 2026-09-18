@@ -7,9 +7,6 @@ import { FloorPlanTab } from "./FloorPlanTab";
 import { CategoriesTab } from "./CategoriesTab";
 import { DiscountsTab } from "./DiscountsTab";
 import { GiftCardsTab } from "./GiftCardsTab";
-import { SuppliersTab } from "./SuppliersTab";
-import { PurchaseOrdersTab } from "./PurchaseOrdersTab";
-import { StockTransfersTab } from "./StockTransfersTab";
 import { KitchenStationsTab } from "./KitchenStationsTab";
 import { AuditLogTab } from "./AuditLogTab";
 
@@ -23,9 +20,6 @@ const tabs = [
   { key: "categories", label: "Categories", component: CategoriesTab },
   { key: "discounts", label: "Discounts & Promotions", component: DiscountsTab },
   { key: "gift-cards", label: "Gift Cards", component: GiftCardsTab },
-  { key: "suppliers", label: "Suppliers", component: SuppliersTab },
-  { key: "purchase-orders", label: "Purchase Orders", component: PurchaseOrdersTab },
-  { key: "stock-transfers", label: "Stock Transfers", component: StockTransfersTab },
   { key: "audit-log", label: "Audit Log", component: AuditLogTab },
 ] as const;
 

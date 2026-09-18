@@ -5,6 +5,7 @@ import { LoginPage } from "@/features/auth/LoginPage";
 import { PosPage } from "@/features/pos/PosPage";
 import { TransactionsPage } from "@/features/transactions/TransactionsPage";
 import { ProductsPage } from "@/features/products/ProductsPage";
+import { InventoryPage } from "@/features/inventory/InventoryPage";
 import { CustomersPage } from "@/features/customers/CustomersPage";
 import { ReportsPage } from "@/features/reports/ReportsPage";
 import { SettingsPage } from "@/features/settings/SettingsPage";
@@ -32,6 +33,7 @@ export function App() {
 
           <Route element={<ProtectedRoute roles={["ADMIN", "MANAGER"]} />}>
             <Route path="/products" element={<ProductsPage />} />
+            <Route path="/inventory" element={<InventoryPage />} />
             <Route path="/reports" element={<ReportsPage />} />
             <Route path="/shift-management" element={<ShiftManagementPage />} />
           </Route>

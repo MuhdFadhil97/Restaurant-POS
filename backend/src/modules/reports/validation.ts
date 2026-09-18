@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const reportQuerySchema = z.object({
-  outletId: z.string().uuid(),
+  outletId: z.coerce.number().int(),
   from: z.string().datetime(),
   to: z.string().datetime(),
   groupBy: z.enum(["day", "week", "month"]).default("day"),

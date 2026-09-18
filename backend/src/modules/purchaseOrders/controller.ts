@@ -13,7 +13,7 @@ export const list = asyncHandler(async (req: Request, res: Response) => {
 });
 
 export const getOne = asyncHandler(async (req: Request, res: Response) => {
-  res.json(await service.getPurchaseOrder(req.params.id));
+  res.json(await service.getPurchaseOrder(Number(req.params.id)));
 });
 
 export const create = asyncHandler(async (req: Request, res: Response) => {
@@ -22,14 +22,14 @@ export const create = asyncHandler(async (req: Request, res: Response) => {
 });
 
 export const markOrdered = asyncHandler(async (req: Request, res: Response) => {
-  res.json(await service.markOrdered(req.params.id));
+  res.json(await service.markOrdered(Number(req.params.id)));
 });
 
 export const cancel = asyncHandler(async (req: Request, res: Response) => {
-  res.json(await service.cancelPurchaseOrder(req.params.id));
+  res.json(await service.cancelPurchaseOrder(Number(req.params.id)));
 });
 
 export const receive = asyncHandler(async (req: Request, res: Response) => {
   const user = requireUser(req);
-  res.json(await service.receivePurchaseOrder(req.params.id, user.userId, req.body));
+  res.json(await service.receivePurchaseOrder(Number(req.params.id), user.userId, req.body));
 });

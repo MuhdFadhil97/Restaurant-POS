@@ -22,7 +22,7 @@ router.get(
   "/staff",
   requireRole("ADMIN", "MANAGER"),
   validate({ query: staffQuerySchema }),
-  requireOutletAccess((req) => req.query.outletId as string),
+  requireOutletAccess((req) => req.query.outletId as unknown as number),
   controller.listStaff
 );
 
@@ -30,7 +30,7 @@ router.get(
   "/",
   requireRole("ADMIN", "MANAGER"),
   validate({ query: listShiftSchedulesQuerySchema }),
-  requireOutletAccess((req) => req.query.outletId as string),
+  requireOutletAccess((req) => req.query.outletId as unknown as number),
   controller.listForMonth
 );
 router.post(

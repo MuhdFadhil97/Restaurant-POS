@@ -19,7 +19,7 @@ export function useMyAttendanceHistory(from?: string, to?: string) {
   });
 }
 
-export function useAttendanceReport(outletId?: string, from?: string, to?: string) {
+export function useAttendanceReport(outletId?: number, from?: string, to?: string) {
   return useQuery({
     queryKey: ["staff-attendance", outletId, from, to],
     queryFn: async () =>
@@ -42,7 +42,7 @@ function invalidateAttendance(qc: ReturnType<typeof useQueryClient>) {
 export function useClockIn() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (input: { outletId: string; scheduleId?: string }) =>
+    mutationFn: async (input: { outletId: number; scheduleId?: number }) =>
       (await apiClient.post<StaffAttendance>("/staff-attendance/clock-in", input)).data,
     onSuccess: () => invalidateAttendance(qc),
   });
@@ -75,7 +75,7 @@ export function useClockOut() {
 export function useCorrectAttendance() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, ...input }: { id: string; clockInAt?: string; clockOutAt?: string | null }) =>
+    mutationFn: async ({ id, ...input }: { id: number; clockInAt?: string; clockOutAt?: string | null }) =>
       (await apiClient.patch<StaffAttendance>(`/staff-attendance/${id}`, input)).data,
     onSuccess: () => invalidateAttendance(qc),
   });

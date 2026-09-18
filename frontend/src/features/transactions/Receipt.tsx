@@ -11,7 +11,7 @@ export function Receipt({ transaction }: { transaction: TransactionDto }) {
         <p className="font-bold">{transaction.outlet?.name ?? "POS"}</p>
         {transaction.outlet?.address && <p className="text-xs">{transaction.outlet.address}</p>}
         <p className="text-xs">{new Date(transaction.createdAt).toLocaleString()}</p>
-        <p className="text-xs">Receipt #{transaction.receiptNumber ?? transaction.id.slice(0, 8).toUpperCase()}</p>
+        <p className="text-xs">Receipt #{transaction.receiptNumber ?? transaction.id}</p>
       </div>
       <hr className="border-dashed my-2" />
       {transaction.items.map((item) => (

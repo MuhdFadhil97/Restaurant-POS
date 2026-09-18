@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "./client";
 import { TableDto, TableShape } from "./types";
 
-export function useTables(outletId?: string) {
+export function useTables(outletId?: number) {
   return useQuery({
     queryKey: ["tables", outletId],
     queryFn: async () => (await apiClient.get<TableDto[]>("/tables", { params: { outletId } })).data,
@@ -14,7 +14,7 @@ export function useTables(outletId?: string) {
 export function useCreateTable() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (input: { outletId: string; name: string; capacity: number }) =>
+    mutationFn: async (input: { outletId: number; name: string; capacity: number }) =>
       (await apiClient.post<TableDto>("/tables", input)).data,
     onSuccess: () => qc.invalidateQueries({ queryKey: ["tables"] }),
   });
@@ -27,7 +27,7 @@ export function useUpdateTable() {
       id,
       input,
     }: {
-      id: string;
+      id: number;
       input: {
         name?: string;
         capacity?: number;
@@ -44,7 +44,7 @@ export function useUpdateTable() {
 export function useDeleteTable() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (id: string) => apiClient.delete(`/tables/${id}`),
+    mutationFn: async (id: number) => apiClient.delete(`/tables/${id}`),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["tables"] }),
   });
 }
@@ -53,8 +53,8 @@ export function useSaveTableLayout() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (input: {
-      outletId: string;
-      tables: { id: string; posX: number; posY: number; shape?: TableShape; width?: number; height?: number }[];
+      outletId: number;
+      tables: { id: number; posX: number; posY: number; shape?: TableShape; width?: number; height?: number }[];
     }) => (await apiClient.patch<TableDto[]>("/tables/layout", input)).data,
     onSuccess: () => qc.invalidateQueries({ queryKey: ["tables"] }),
   });

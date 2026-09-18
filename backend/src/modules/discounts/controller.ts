@@ -11,10 +11,10 @@ export const create = asyncHandler(async (req: Request, res: Response) => {
 });
 
 export const update = asyncHandler(async (req: Request, res: Response) => {
-  res.json(await service.updateDiscount(req.params.id, req.body));
+  res.json(await service.updateDiscount(Number(req.params.id), req.body));
 });
 
 export const remove = asyncHandler(async (req: Request, res: Response) => {
-  await service.deleteDiscount(req.params.id);
+  await service.deleteDiscount(Number(req.params.id));
   res.status(204).send();
 });

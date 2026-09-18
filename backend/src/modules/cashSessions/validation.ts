@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const openSessionSchema = z.object({
-  outletId: z.string().uuid(),
+  outletId: z.coerce.number().int(),
   openingCash: z.number().nonnegative(),
 });
 

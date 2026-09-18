@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "./client";
 import { BulkAdjustPreview, BulkAdjustSummary, ImportPreview, ImportSummary, Product, ProductCategory } from "./types";
 
-export function useProducts(outletId?: string) {
+export function useProducts(outletId?: number) {
   return useQuery({
     queryKey: ["products", outletId],
     queryFn: async () =>
@@ -23,7 +23,7 @@ export function useCreateProduct() {
 export function useUpdateProduct() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, input }: { id: string; input: Record<string, unknown> }) =>
+    mutationFn: async ({ id, input }: { id: number; input: Record<string, unknown> }) =>
       (await apiClient.patch<Product>(`/products/${id}`, input)).data,
     onSuccess: () => qc.invalidateQueries({ queryKey: ["products"] }),
   });
@@ -32,14 +32,14 @@ export function useUpdateProduct() {
 export function useDeleteProduct() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (id: string) => apiClient.delete(`/products/${id}`),
+    mutationFn: async (id: number) => apiClient.delete(`/products/${id}`),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["products"] }),
   });
 }
 
 export function usePreviewImportProducts() {
   return useMutation({
-    mutationFn: async ({ csv, outletId }: { csv: string; outletId?: string }) =>
+    mutationFn: async ({ csv, outletId }: { csv: string; outletId?: number }) =>
       (await apiClient.post<ImportPreview>("/products/import/preview", { csv }, { params: { outletId } })).data,
   });
 }
@@ -47,7 +47,7 @@ export function usePreviewImportProducts() {
 export function useImportProducts() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ csv, outletId }: { csv: string; outletId?: string }) =>
+    mutationFn: async ({ csv, outletId }: { csv: string; outletId?: number }) =>
       (await apiClient.post<ImportSummary>("/products/import", { csv }, { params: { outletId } })).data,
     onSuccess: () => qc.invalidateQueries({ queryKey: ["products"] }),
   });
@@ -68,7 +68,7 @@ export async function downloadProductImportTemplate() {
 
 export function usePreviewBulkAdjustProducts() {
   return useMutation({
-    mutationFn: async ({ csv, outletId }: { csv: string; outletId: string }) =>
+    mutationFn: async ({ csv, outletId }: { csv: string; outletId: number }) =>
       (await apiClient.post<BulkAdjustPreview>("/products/bulk-adjust/preview", { csv }, { params: { outletId } })).data,
   });
 }
@@ -76,7 +76,7 @@ export function usePreviewBulkAdjustProducts() {
 export function useBulkAdjustProducts() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ csv, outletId }: { csv: string; outletId: string }) =>
+    mutationFn: async ({ csv, outletId }: { csv: string; outletId: number }) =>
       (await apiClient.post<BulkAdjustSummary>("/products/bulk-adjust", { csv }, { params: { outletId } })).data,
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["products"] });
@@ -117,7 +117,7 @@ export function useCreateCategory() {
 export function useUpdateCategory() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, name }: { id: string; name: string }) =>
+    mutationFn: async ({ id, name }: { id: number; name: string }) =>
       (await apiClient.patch<ProductCategory>(`/categories/${id}`, { name })).data,
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["categories"] });
@@ -129,7 +129,7 @@ export function useUpdateCategory() {
 export function useDeleteCategory() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (id: string) => apiClient.delete(`/categories/${id}`),
+    mutationFn: async (id: number) => apiClient.delete(`/categories/${id}`),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["categories"] });
       qc.invalidateQueries({ queryKey: ["products"] });

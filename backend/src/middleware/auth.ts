@@ -27,7 +27,7 @@ export function authenticate(req: Request, _res: Response, next: NextFunction) {
 
 // Ensures the outletId referenced in the request (params, query, or body)
 // is one the authenticated user has access to. Admins bypass this check.
-export function requireOutletAccess(getOutletId: (req: Request) => string | undefined) {
+export function requireOutletAccess(getOutletId: (req: Request) => number | undefined) {
   return (req: Request, _res: Response, next: NextFunction) => {
     const outletId = getOutletId(req);
     if (!outletId) {

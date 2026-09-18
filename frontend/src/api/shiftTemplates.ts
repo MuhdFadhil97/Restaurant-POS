@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "./client";
 import { StaffShiftTemplate } from "./types";
 
-export function useShiftTemplates(outletId?: string) {
+export function useShiftTemplates(outletId?: number) {
   return useQuery({
     queryKey: ["shift-templates", outletId],
     queryFn: async () =>
@@ -23,7 +23,7 @@ export function useCreateShiftTemplate() {
 export function useUpdateShiftTemplate() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, ...input }: Partial<StaffShiftTemplate> & { id: string }) =>
+    mutationFn: async ({ id, ...input }: Partial<StaffShiftTemplate> & { id: number }) =>
       (await apiClient.patch<StaffShiftTemplate>(`/shift-templates/${id}`, input)).data,
     onSuccess: () => qc.invalidateQueries({ queryKey: ["shift-templates"] }),
   });
@@ -32,7 +32,7 @@ export function useUpdateShiftTemplate() {
 export function useDeleteShiftTemplate() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (id: string) => {
+    mutationFn: async (id: number) => {
       await apiClient.delete(`/shift-templates/${id}`);
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["shift-templates"] }),

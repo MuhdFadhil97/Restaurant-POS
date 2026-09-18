@@ -1,8 +1,8 @@
 import { prisma } from "../../lib/prisma";
 
 export interface AuditLogQuery {
-  outletId?: string;
-  userId?: string;
+  outletId?: number;
+  userId?: number;
   action?: string;
   limit?: number;
 }

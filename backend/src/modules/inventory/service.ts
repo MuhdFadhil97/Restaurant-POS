@@ -2,7 +2,7 @@ import { prisma } from "../../lib/prisma";
 import { recordAudit } from "../../lib/audit";
 import { StockAdjustmentInput } from "./validation";
 
-export async function adjustStock(userId: string, input: StockAdjustmentInput) {
+export async function adjustStock(userId: number, input: StockAdjustmentInput) {
   return prisma.$transaction(async (tx) => {
     const variantId = input.variantId ?? null;
 
@@ -51,7 +51,7 @@ export async function adjustStock(userId: string, input: StockAdjustmentInput) {
   });
 }
 
-export async function listMovements(outletId: string, productId?: string) {
+export async function listMovements(outletId: number, productId?: number) {
   return prisma.inventoryMovement.findMany({
     where: { outletId, ...(productId ? { productId } : {}) },
     include: { product: true, variant: true, performedBy: { select: { id: true, name: true } } },
@@ -59,7 +59,7 @@ export async function listMovements(outletId: string, productId?: string) {
   });
 }
 
-export async function listLowStock(outletId: string) {
+export async function listLowStock(outletId: number) {
   const stocks = await prisma.productStock.findMany({
     where: { outletId },
     include: { product: true, variant: true },

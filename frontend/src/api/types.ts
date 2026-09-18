@@ -11,7 +11,7 @@ export type PurchaseOrderStatus = "DRAFT" | "ORDERED" | "PARTIALLY_RECEIVED" | "
 export type StockTransferStatus = "PENDING" | "IN_TRANSIT" | "RECEIVED" | "CANCELLED";
 
 export interface Outlet {
-  id: string;
+  id: number;
   name: string;
   address?: string | null;
   phone?: string | null;
@@ -23,23 +23,23 @@ export interface Outlet {
 }
 
 export interface UserDto {
-  id: string;
+  id: number;
   email: string;
   username: string;
   name: string;
   role: Role;
   isActive: boolean;
-  outletIds: string[];
+  outletIds: number[];
 }
 
 export interface ProductCategory {
-  id: string;
+  id: number;
   name: string;
 }
 
 export interface ProductVariant {
-  id: string;
-  productId: string;
+  id: number;
+  productId: number;
   name: string;
   value: string;
   skuSuffix?: string | null;
@@ -47,38 +47,38 @@ export interface ProductVariant {
 }
 
 export interface TaxRate {
-  id: string;
-  outletId: string;
+  id: number;
+  outletId: number;
   name: string;
   rate: number;
   isDefault: boolean;
 }
 
 export interface ProductStock {
-  id: string;
-  productId: string;
-  variantId: string | null;
-  outletId: string;
+  id: number;
+  productId: number;
+  variantId: number | null;
+  outletId: number;
   quantity: number;
 }
 
 export interface KitchenStation {
-  id: string;
-  outletId: string;
+  id: number;
+  outletId: number;
   name: string;
 }
 
 export interface Product {
-  id: string;
+  id: number;
   sku: string;
   name: string;
-  categoryId: string | null;
+  categoryId: number | null;
   category?: ProductCategory | null;
   unitPrice: number;
   costPrice?: number; // absent for cashiers
-  taxRateId: string | null;
+  taxRateId: number | null;
   taxRate?: TaxRate | null;
-  stationId?: string | null;
+  stationId?: number | null;
   station?: KitchenStation | null;
   unitOfMeasure: string;
   imageUrl?: string | null;
@@ -91,7 +91,7 @@ export interface Product {
 export type CustomerSource = "WALK_IN" | "SOCIAL_MEDIA" | "REFERRAL" | "THIRD_PARTY" | "ONLINE";
 
 export interface Customer {
-  id: string;
+  id: number;
   name: string;
   identificationNo?: string | null;
   dateOfBirth?: string | null;
@@ -104,7 +104,7 @@ export interface Customer {
 }
 
 export interface Discount {
-  id: string;
+  id: number;
   name: string;
   type: DiscountType;
   scope: DiscountScope;
@@ -116,13 +116,13 @@ export interface Discount {
   endDate?: string | null;
   usageLimit?: number | null;
   usageCount?: number;
-  productId?: string | null;
-  categoryId?: string | null;
+  productId?: number | null;
+  categoryId?: number | null;
 }
 
 export interface TableDto {
-  id: string;
-  outletId: string;
+  id: number;
+  outletId: number;
   name: string;
   capacity: number;
   status: TableStatus;
@@ -137,14 +137,14 @@ export interface TableDto {
 }
 
 export interface TransactionItemDto {
-  id: string;
-  productId: string;
+  id: number;
+  productId: number;
   product: Product;
-  variantId: string | null;
+  variantId: number | null;
   variant: ProductVariant | null;
   quantity: number;
   unitPrice: number;
-  discountId: string | null;
+  discountId: number | null;
   discountAmount: number;
   taxAmount: number;
   lineTotal: number;
@@ -155,30 +155,30 @@ export interface TransactionItemDto {
 }
 
 export interface PaymentDto {
-  id: string;
+  id: number;
   method: PaymentMethod;
   amount: number;
   reference?: string | null;
   remark?: string | null;
-  giftCardId?: string | null;
-  giftCard?: { id: string; code: string } | null;
+  giftCardId?: number | null;
+  giftCard?: { id: number; code: string } | null;
 }
 
 export interface TransactionDto {
-  id: string;
-  outletId: string;
+  id: number;
+  outletId: number;
   outlet?: Outlet;
-  tableId: string | null;
+  tableId: number | null;
   table?: TableDto | null;
-  customerId: string | null;
+  customerId: number | null;
   customer?: Customer | null;
-  cashierId: string;
-  cashier?: { id: string; name: string };
+  cashierId: number;
+  cashier?: { id: number; name: string };
   status: TransactionStatus;
   receiptNumber?: string | null;
   subtotal: number;
   discountTotal: number;
-  orderDiscountId?: string | null;
+  orderDiscountId?: number | null;
   orderDiscount?: Discount | null;
   taxTotal: number;
   total: number;
@@ -193,23 +193,23 @@ export interface TransactionDto {
 }
 
 export interface InventoryMovement {
-  id: string;
-  outletId: string;
-  productId: string;
+  id: number;
+  outletId: number;
+  productId: number;
   product: Product;
-  variantId: string | null;
+  variantId: number | null;
   variant: ProductVariant | null;
   type: MovementType;
   quantityChange: number;
   reason?: string | null;
   createdAt: string;
-  performedBy: { id: string; name: string };
+  performedBy: { id: number; name: string };
 }
 
 export interface CashSession {
-  id: string;
-  outletId: string;
-  userId: string;
+  id: number;
+  outletId: number;
+  userId: number;
   status: "OPEN" | "CLOSED";
   openingCash: number;
   expectedCash?: number | null;
@@ -222,8 +222,8 @@ export interface CashSession {
 export type AttendanceStatus = "CLOCKED_IN" | "ON_BREAK" | "CLOCKED_OUT";
 
 export interface StaffShiftTemplate {
-  id: string;
-  outletId: string;
+  id: number;
+  outletId: number;
   name: string;
   startTime: string; // "HH:mm"
   endTime: string; // "HH:mm"; endTime <= startTime means overnight
@@ -234,33 +234,33 @@ export interface StaffShiftTemplate {
 }
 
 export interface StaffShiftSchedule {
-  id: string;
-  outletId: string;
-  userId: string;
-  user?: { id: string; name: string; role: string };
-  shiftTemplateId: string;
+  id: number;
+  outletId: number;
+  userId: number;
+  user?: { id: number; name: string; role: string };
+  shiftTemplateId: number;
   shiftTemplate?: StaffShiftTemplate;
   date: string;
   notes?: string | null;
-  createdByUserId: string;
+  createdByUserId: number;
   createdAt: string;
   updatedAt: string;
 }
 
 export interface StaffBreakRecord {
-  id: string;
-  attendanceId: string;
+  id: number;
+  attendanceId: number;
   breakStart: string;
   breakEnd?: string | null;
   createdAt: string;
 }
 
 export interface StaffAttendance {
-  id: string;
-  outletId: string;
-  userId: string;
-  user?: { id: string; name: string; role: string };
-  scheduleId?: string | null;
+  id: number;
+  outletId: number;
+  userId: number;
+  user?: { id: number; name: string; role: string };
+  scheduleId?: number | null;
   schedule?: StaffShiftSchedule | null;
   status: AttendanceStatus;
   clockInAt: string;
@@ -275,7 +275,7 @@ export interface StaffAttendance {
 }
 
 export interface WeeklyComplianceSummary {
-  userId: string;
+  userId: number;
   userName: string;
   weekStart: string;
   workedHours: number;
@@ -285,19 +285,19 @@ export interface WeeklyComplianceSummary {
 }
 
 export interface AuditLogEntry {
-  id: string;
-  outletId?: string | null;
-  userId: string;
-  user?: { id: string; name: string };
+  id: number;
+  outletId?: number | null;
+  userId: number;
+  user?: { id: number; name: string };
   action: string;
   entityType: string;
-  entityId: string;
+  entityId: number;
   details?: unknown;
   createdAt: string;
 }
 
 export interface Supplier {
-  id: string;
+  id: number;
   name: string;
   contactName?: string | null;
   email?: string | null;
@@ -307,10 +307,10 @@ export interface Supplier {
 }
 
 export interface PurchaseOrderItemDto {
-  id: string;
-  productId: string;
+  id: number;
+  productId: number;
   product: Product;
-  variantId: string | null;
+  variantId: number | null;
   variant: ProductVariant | null;
   quantityOrdered: number;
   quantityReceived: number;
@@ -318,13 +318,13 @@ export interface PurchaseOrderItemDto {
 }
 
 export interface PurchaseOrderDto {
-  id: string;
-  outletId: string;
+  id: number;
+  outletId: number;
   outlet?: Outlet;
-  supplierId: string;
+  supplierId: number;
   supplier?: Supplier;
   status: PurchaseOrderStatus;
-  createdBy?: { id: string; name: string };
+  createdBy?: { id: number; name: string };
   orderedAt?: string | null;
   expectedAt?: string | null;
   receivedAt?: string | null;
@@ -335,22 +335,22 @@ export interface PurchaseOrderDto {
 }
 
 export interface StockTransferItemDto {
-  id: string;
-  productId: string;
+  id: number;
+  productId: number;
   product: Product;
-  variantId: string | null;
+  variantId: number | null;
   variant: ProductVariant | null;
   quantity: number;
 }
 
 export interface StockTransferDto {
-  id: string;
-  fromOutletId: string;
+  id: number;
+  fromOutletId: number;
   fromOutlet?: Outlet;
-  toOutletId: string;
+  toOutletId: number;
   toOutlet?: Outlet;
   status: StockTransferStatus;
-  requestedBy?: { id: string; name: string };
+  requestedBy?: { id: number; name: string };
   sentAt?: string | null;
   receivedAt?: string | null;
   notes?: string | null;
@@ -425,7 +425,7 @@ export interface BulkAdjustPreview {
 }
 
 export interface GiftCard {
-  id: string;
+  id: number;
   code: string;
   balance: number;
   isActive: boolean;

@@ -3,7 +3,7 @@ import { z } from "zod";
 const tableShape = z.enum(["ROUND", "RECTANGLE"]);
 
 export const createTableSchema = z.object({
-  outletId: z.string().uuid(),
+  outletId: z.coerce.number().int(),
   name: z.string().min(1),
   capacity: z.number().int().positive().default(2),
 });
@@ -18,11 +18,11 @@ export const updateTableSchema = z.object({
 });
 
 export const saveLayoutSchema = z.object({
-  outletId: z.string().uuid(),
+  outletId: z.coerce.number().int(),
   tables: z
     .array(
       z.object({
-        id: z.string().uuid(),
+        id: z.coerce.number().int(),
         posX: z.number().int(),
         posY: z.number().int(),
         shape: tableShape.optional(),

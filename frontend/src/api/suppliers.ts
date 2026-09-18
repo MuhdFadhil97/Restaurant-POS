@@ -20,7 +20,7 @@ export function useCreateSupplier() {
 export function useUpdateSupplier() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, input }: { id: string; input: Partial<Supplier> }) =>
+    mutationFn: async ({ id, input }: { id: number; input: Partial<Supplier> }) =>
       (await apiClient.patch<Supplier>(`/suppliers/${id}`, input)).data,
     onSuccess: () => qc.invalidateQueries({ queryKey: ["suppliers"] }),
   });
@@ -29,7 +29,7 @@ export function useUpdateSupplier() {
 export function useDeleteSupplier() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (id: string) => apiClient.delete(`/suppliers/${id}`),
+    mutationFn: async (id: number) => apiClient.delete(`/suppliers/${id}`),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["suppliers"] }),
   });
 }

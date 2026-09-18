@@ -105,7 +105,7 @@ export function shiftDurationHours(startTime: string, endTime: string): number {
 }
 
 export interface ScheduleCandidate {
-  id: string;
+  id: number;
   date: Date;
   shiftTemplate: { startTime: string; endTime: string };
 }

@@ -20,7 +20,7 @@ export function useCreateDiscount() {
 export function useUpdateDiscount() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, input }: { id: string; input: Partial<Discount> }) =>
+    mutationFn: async ({ id, input }: { id: number; input: Partial<Discount> }) =>
       (await apiClient.patch<Discount>(`/discounts/${id}`, input)).data,
     onSuccess: () => qc.invalidateQueries({ queryKey: ["discounts"] }),
   });
@@ -29,7 +29,7 @@ export function useUpdateDiscount() {
 export function useDeleteDiscount() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (id: string) => apiClient.delete(`/discounts/${id}`),
+    mutationFn: async (id: number) => apiClient.delete(`/discounts/${id}`),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["discounts"] }),
   });
 }

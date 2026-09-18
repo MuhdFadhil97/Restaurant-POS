@@ -22,7 +22,7 @@ router.get(
   "/",
   requireRole("ADMIN", "MANAGER"),
   validate({ query: listAttendanceQuerySchema }),
-  requireOutletAccess((req) => req.query.outletId as string),
+  requireOutletAccess((req) => req.query.outletId as unknown as number),
   controller.list
 );
 router.patch("/:id", requireRole("ADMIN", "MANAGER"), validate({ body: correctAttendanceSchema }), controller.correct);

@@ -12,7 +12,7 @@ export function ProductGrid({
   onSelect: (product: Product, variant: ProductVariant | null) => void;
 }) {
   const [search, setSearch] = useState("");
-  const [categoryId, setCategoryId] = useState<string | "all">("all");
+  const [categoryId, setCategoryId] = useState<number | "all">("all");
   const { data: categories } = useCategories();
 
   const filtered = useMemo(() => {

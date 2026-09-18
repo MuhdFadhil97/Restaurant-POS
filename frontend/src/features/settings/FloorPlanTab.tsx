@@ -39,7 +39,7 @@ export function FloorPlanTab() {
 
   const merged = positioned.map((t) => ({ ...t, ...(pending[t.id] ?? {}) }));
 
-  function handleDragEnd(id: string, posX: number, posY: number) {
+  function handleDragEnd(id: number, posX: number, posY: number) {
     setPending((prev) => ({ ...prev, [id]: { posX, posY } }));
   }
 

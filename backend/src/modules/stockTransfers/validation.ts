@@ -1,15 +1,15 @@
 import { z } from "zod";
 
 const itemInput = z.object({
-  productId: z.string().uuid(),
-  variantId: z.string().uuid().optional(),
+  productId: z.coerce.number().int(),
+  variantId: z.coerce.number().int().optional(),
   quantity: z.number().int().positive(),
 });
 
 export const createTransferSchema = z
   .object({
-    fromOutletId: z.string().uuid(),
-    toOutletId: z.string().uuid(),
+    fromOutletId: z.coerce.number().int(),
+    toOutletId: z.coerce.number().int(),
     notes: z.string().optional(),
     items: z.array(itemInput).min(1, "At least one item is required"),
   })
@@ -19,7 +19,7 @@ export const createTransferSchema = z
   });
 
 export const listQuerySchema = z.object({
-  outletId: z.string().uuid().optional(),
+  outletId: z.coerce.number().int().optional(),
   status: z.enum(["PENDING", "IN_TRANSIT", "RECEIVED", "CANCELLED"]).optional(),
 });
 

@@ -18,7 +18,7 @@ export function TransactionsPage() {
   const outletId = useOutletStore((s) => s.activeOutletId);
   const [status, setStatus] = useState<TransactionStatus | "">("");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | "">("");
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<number | null>(null);
 
   const { data, isLoading } = useTransactions({
     outletId: outletId ?? undefined,

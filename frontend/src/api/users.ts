@@ -20,7 +20,7 @@ export function useCreateUser() {
 export function useUpdateUser() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, input }: { id: string; input: Record<string, unknown> }) =>
+    mutationFn: async ({ id, input }: { id: number; input: Record<string, unknown> }) =>
       (await apiClient.patch<UserDto>(`/users/${id}`, input)).data,
     onSuccess: () => qc.invalidateQueries({ queryKey: ["users"] }),
   });

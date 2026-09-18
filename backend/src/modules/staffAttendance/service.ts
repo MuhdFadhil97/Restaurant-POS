@@ -12,7 +12,7 @@ const detailInclude = {
   user: { select: { id: true, name: true, role: true } },
 };
 
-export async function getCurrentAttendance(userId: string) {
+export async function getCurrentAttendance(userId: number) {
   return prisma.staffAttendance.findFirst({
     where: { userId, status: { not: "CLOCKED_OUT" } },
     include: detailInclude,
@@ -23,7 +23,7 @@ export async function getCurrentAttendance(userId: string) {
 // create" shape. The partial unique index in the migration backs this up
 // against a double-click race (surfaces as a 409 via errorHandler's P2002
 // mapping, not a second open row).
-export async function clockIn(userId: string, input: ClockInInput) {
+export async function clockIn(userId: number, input: ClockInInput) {
   const existing = await getCurrentAttendance(userId);
   if (existing) {
     throw ApiError.conflict("You are already clocked in");
@@ -56,7 +56,7 @@ export async function clockIn(userId: string, input: ClockInInput) {
   }
 }
 
-export async function startBreak(userId: string) {
+export async function startBreak(userId: number) {
   const attendance = await getCurrentAttendance(userId);
   if (!attendance) throw ApiError.badRequest("You are not clocked in");
   if (attendance.status === "ON_BREAK") throw ApiError.conflict("You are already on break");
@@ -77,7 +77,7 @@ export async function startBreak(userId: string) {
   });
 }
 
-export async function endBreak(userId: string) {
+export async function endBreak(userId: number) {
   const attendance = await getCurrentAttendance(userId);
   if (!attendance) throw ApiError.badRequest("You are not clocked in");
   const openBreak = attendance.breaks.find((b) => !b.breakEnd);
@@ -93,7 +93,7 @@ export async function endBreak(userId: string) {
 
 // Mirrors cashSessions.closeSession's "recompute derived totals server-side
 // at close time" shape.
-export async function clockOut(userId: string) {
+export async function clockOut(userId: number) {
   const attendance = await getCurrentAttendance(userId);
   if (!attendance) throw ApiError.badRequest("You are not clocked in");
 
@@ -123,7 +123,7 @@ export async function clockOut(userId: string) {
   });
 }
 
-export async function listMyAttendance(userId: string, from: string, to: string) {
+export async function listMyAttendance(userId: number, from: string, to: string) {
   return prisma.staffAttendance.findMany({
     where: { userId, clockInAt: { gte: new Date(`${from}T00:00:00`), lte: new Date(`${to}T23:59:59`) } },
     include: detailInclude,
@@ -131,7 +131,7 @@ export async function listMyAttendance(userId: string, from: string, to: string)
   });
 }
 
-export async function listAttendance(outletId: string, from: string, to: string) {
+export async function listAttendance(outletId: number, from: string, to: string) {
   const records = await prisma.staffAttendance.findMany({
     where: { outletId, clockInAt: { gte: new Date(`${from}T00:00:00`), lte: new Date(`${to}T23:59:59`) } },
     include: detailInclude,
@@ -153,11 +153,11 @@ function isoWeekStart(date: Date): string {
 // cross-day aggregation, so they're derived here from actual attendance
 // records rather than persisted per-row.
 function computeWeeklyCompliance(
-  records: { userId: string; user: { name: string }; clockInAt: Date; totalWorkedMinutes: number | null }[]
+  records: { userId: number; user: { name: string }; clockInAt: Date; totalWorkedMinutes: number | null }[]
 ) {
   const byUserWeek = new Map<
     string,
-    { userId: string; userName: string; weekStart: string; workedMinutes: number; days: Set<string> }
+    { userId: number; userName: string; weekStart: string; workedMinutes: number; days: Set<string> }
   >();
 
   for (const r of records) {
@@ -189,7 +189,7 @@ function computeWeeklyCompliance(
 
 // Admin/manager correction for a stuck or forgotten clock-out. Re-runs the
 // same compliance evaluation used at ordinary clock-out (single call site).
-export async function correctAttendance(actorUserId: string, id: string, input: CorrectAttendanceInput) {
+export async function correctAttendance(actorUserId: number, id: number, input: CorrectAttendanceInput) {
   const attendance = await prisma.staffAttendance.findUnique({ where: { id }, include: { breaks: true } });
   if (!attendance) throw ApiError.notFound("Attendance record not found");
 

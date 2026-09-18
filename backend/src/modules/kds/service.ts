@@ -22,7 +22,7 @@ export async function getQueue(query: QueueQuery) {
   });
 }
 
-export async function updatePrepStatus(itemId: string, prepStatus: PrepStatus) {
+export async function updatePrepStatus(itemId: number, prepStatus: PrepStatus) {
   const item = await prisma.transactionItem.findUnique({ where: { id: itemId } });
   if (!item) throw ApiError.notFound("Transaction item not found");
 

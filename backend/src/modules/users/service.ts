@@ -7,13 +7,13 @@ import { CreateUserInput, UpdateUserInput } from "./validation";
 const SALT_ROUNDS = 10;
 
 function toDto(user: {
-  id: string;
+  id: number;
   email: string;
   username: string;
   name: string;
   role: string;
   isActive: boolean;
-  outletAccess: { outletId: string }[];
+  outletAccess: { outletId: number }[];
 }) {
   return {
     id: user.id,
@@ -35,7 +35,7 @@ export async function listUsers() {
   return users.map(toDto);
 }
 
-export async function getUser(id: string) {
+export async function getUser(id: number) {
   const user = await prisma.user.findFirst({
     where: { id, deletedAt: null },
     include: { outletAccess: { select: { outletId: true } } },
@@ -60,7 +60,7 @@ export async function createUser(input: CreateUserInput) {
   return toDto(user);
 }
 
-export async function updateUser(id: string, input: UpdateUserInput, actorUserId: string) {
+export async function updateUser(id: number, input: UpdateUserInput, actorUserId: number) {
   const existing = await prisma.user.findFirst({ where: { id, deletedAt: null } });
   if (!existing) throw ApiError.notFound("User not found");
 
@@ -114,7 +114,7 @@ export async function updateUser(id: string, input: UpdateUserInput, actorUserId
   return toDto(user);
 }
 
-export async function deleteUser(id: string) {
+export async function deleteUser(id: number) {
   await getUser(id);
   await prisma.user.update({ where: { id }, data: { deletedAt: new Date(), isActive: false } });
 }

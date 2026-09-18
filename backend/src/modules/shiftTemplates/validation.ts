@@ -2,7 +2,7 @@ import { z } from "zod";
 import { TIME_FORMAT_REGEX } from "../staffAttendance/complianceRules";
 
 export const createShiftTemplateSchema = z.object({
-  outletId: z.string().uuid(),
+  outletId: z.coerce.number().int(),
   name: z.string().min(1),
   startTime: z.string().regex(TIME_FORMAT_REGEX, "startTime must be HH:mm (24h)"),
   endTime: z.string().regex(TIME_FORMAT_REGEX, "endTime must be HH:mm (24h)"),
@@ -18,7 +18,7 @@ export const updateShiftTemplateSchema = z.object({
 });
 
 export const listShiftTemplatesQuerySchema = z.object({
-  outletId: z.string().uuid(),
+  outletId: z.coerce.number().int(),
 });
 
 export type CreateShiftTemplateInput = z.infer<typeof createShiftTemplateSchema>;

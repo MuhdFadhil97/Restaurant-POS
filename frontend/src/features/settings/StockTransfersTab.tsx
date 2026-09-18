@@ -51,9 +51,9 @@ export function StockTransfersTab() {
     if (!outletId || !toOutletId) return;
     const validItems = items
       .filter((i) => i.productId && Number(i.quantity) > 0)
-      .map((i) => ({ productId: i.productId, quantity: Number(i.quantity) }));
+      .map((i) => ({ productId: Number(i.productId), quantity: Number(i.quantity) }));
     if (validItems.length === 0) return;
-    await createTransfer.mutateAsync({ fromOutletId: outletId, toOutletId, items: validItems });
+    await createTransfer.mutateAsync({ fromOutletId: outletId, toOutletId: Number(toOutletId), items: validItems });
     setShowForm(false);
     setToOutletId("");
     setItems([{ productId: "", quantity: "" }]);

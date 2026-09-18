@@ -1,8 +1,8 @@
 import { z } from "zod";
 
 export const queueQuerySchema = z.object({
-  outletId: z.string().uuid(),
-  stationId: z.string().uuid().optional(),
+  outletId: z.coerce.number().int(),
+  stationId: z.coerce.number().int().optional(),
 });
 
 export const updatePrepStatusSchema = z.object({

@@ -20,7 +20,7 @@ export function BulkAdjustmentModal({
   onClose,
 }: {
   open: boolean;
-  outletId?: string;
+  outletId?: number;
   onClose: () => void;
 }) {
   const previewBulkAdjust = usePreviewBulkAdjustProducts();

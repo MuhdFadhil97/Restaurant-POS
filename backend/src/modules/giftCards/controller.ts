@@ -18,5 +18,5 @@ export const create = asyncHandler(async (req: Request, res: Response) => {
 });
 
 export const adjust = asyncHandler(async (req: Request, res: Response) => {
-  res.json(await service.adjustGiftCard(req.params.id, req.body));
+  res.json(await service.adjustGiftCard(Number(req.params.id), req.body));
 });

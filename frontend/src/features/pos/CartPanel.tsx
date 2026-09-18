@@ -3,7 +3,7 @@ import { Button, Select } from "@/components/ui";
 import { money } from "./cartMath";
 
 export interface CartLineView {
-  key: string;
+  key: string | number;
   name: string;
   variantLabel?: string;
   quantity: number;
@@ -42,13 +42,13 @@ export function CartPanel({
   totals: CartTotals;
   tableName?: string | null;
   customers: Customer[];
-  customerId: string;
-  onCustomerChange: (id: string) => void;
+  customerId: number | null;
+  onCustomerChange: (id: number | null) => void;
   discounts: Discount[];
-  orderDiscountId: string;
-  onOrderDiscountChange: (id: string) => void;
-  onQtyChange: (key: string, quantity: number) => void;
-  onRemove: (key: string) => void;
+  orderDiscountId: number | null;
+  onOrderDiscountChange: (id: number | null) => void;
+  onQtyChange: (key: string | number, quantity: number) => void;
+  onRemove: (key: string | number) => void;
   onHold?: () => void;
   onSendToTable?: () => void;
   onPay: () => void;
@@ -97,7 +97,7 @@ export function CartPanel({
 
       <div className="border-t border-gray-200 p-4 space-y-3">
         <div className="grid grid-cols-2 gap-2">
-          <Select value={customerId} onChange={(e) => onCustomerChange(e.target.value)}>
+          <Select value={customerId ?? ""} onChange={(e) => onCustomerChange(e.target.value ? Number(e.target.value) : null)}>
             <option value="">Walk-in customer</option>
             {customers.map((c) => (
               <option key={c.id} value={c.id}>
@@ -105,7 +105,7 @@ export function CartPanel({
               </option>
             ))}
           </Select>
-          <Select value={orderDiscountId} onChange={(e) => onOrderDiscountChange(e.target.value)}>
+          <Select value={orderDiscountId ?? ""} onChange={(e) => onOrderDiscountChange(e.target.value ? Number(e.target.value) : null)}>
             <option value="">No order discount</option>
             {discounts
               .filter((d) => d.scope === "ORDER")

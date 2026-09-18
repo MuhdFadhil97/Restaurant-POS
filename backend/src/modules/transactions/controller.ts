@@ -13,7 +13,7 @@ export const list = asyncHandler(async (req: Request, res: Response) => {
 });
 
 export const getOne = asyncHandler(async (req: Request, res: Response) => {
-  res.json(await service.getTransaction(req.params.id));
+  res.json(await service.getTransaction(Number(req.params.id)));
 });
 
 export const createDraft = asyncHandler(async (req: Request, res: Response) => {
@@ -28,31 +28,31 @@ export const checkout = asyncHandler(async (req: Request, res: Response) => {
 
 export const finalize = asyncHandler(async (req: Request, res: Response) => {
   const user = requireUser(req);
-  res.json(await service.finalize(req.params.id, user.userId, req.body));
+  res.json(await service.finalize(Number(req.params.id), user.userId, req.body));
 });
 
 export const addItem = asyncHandler(async (req: Request, res: Response) => {
-  res.status(201).json(await service.addItem(req.params.id, req.body));
+  res.status(201).json(await service.addItem(Number(req.params.id), req.body));
 });
 
 export const updateItem = asyncHandler(async (req: Request, res: Response) => {
-  res.json(await service.updateItem(req.params.id, req.params.itemId, req.body));
+  res.json(await service.updateItem(Number(req.params.id), Number(req.params.itemId), req.body));
 });
 
 export const removeItem = asyncHandler(async (req: Request, res: Response) => {
-  res.json(await service.removeItem(req.params.id, req.params.itemId));
+  res.json(await service.removeItem(Number(req.params.id), Number(req.params.itemId)));
 });
 
 export const update = asyncHandler(async (req: Request, res: Response) => {
-  res.json(await service.updateTransaction(req.params.id, req.body));
+  res.json(await service.updateTransaction(Number(req.params.id), req.body));
 });
 
 export const voidTransaction = asyncHandler(async (req: Request, res: Response) => {
   const user = requireUser(req);
-  res.json(await service.voidTransaction(req.params.id, user.userId, user.role, req.body));
+  res.json(await service.voidTransaction(Number(req.params.id), user.userId, user.role, req.body));
 });
 
 export const refundTransaction = asyncHandler(async (req: Request, res: Response) => {
   const user = requireUser(req);
-  res.json(await service.refundTransaction(req.params.id, user.userId, user.role, req.body));
+  res.json(await service.refundTransaction(Number(req.params.id), user.userId, user.role, req.body));
 });

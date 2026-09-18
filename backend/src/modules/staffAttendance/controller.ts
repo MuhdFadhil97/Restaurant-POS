@@ -28,10 +28,10 @@ export const listMine = asyncHandler(async (req: Request, res: Response) => {
 });
 
 export const list = asyncHandler(async (req: Request, res: Response) => {
-  const { outletId, from, to } = req.query as { outletId: string; from: string; to: string };
+  const { outletId, from, to } = req.query as unknown as { outletId: number; from: string; to: string };
   res.json(await service.listAttendance(outletId, from, to));
 });
 
 export const correct = asyncHandler(async (req: Request, res: Response) => {
-  res.json(await service.correctAttendance(req.user!.userId, req.params.id, req.body));
+  res.json(await service.correctAttendance(req.user!.userId, Number(req.params.id), req.body));
 });

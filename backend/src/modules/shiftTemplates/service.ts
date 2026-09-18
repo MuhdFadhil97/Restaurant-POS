@@ -9,14 +9,14 @@ function assertDurationValid(startTime: string, endTime: string) {
   }
 }
 
-export async function listShiftTemplates(outletId: string) {
+export async function listShiftTemplates(outletId: number) {
   return prisma.staffShiftTemplate.findMany({
     where: { outletId, deletedAt: null },
     orderBy: { startTime: "asc" },
   });
 }
 
-export async function getShiftTemplate(id: string) {
+export async function getShiftTemplate(id: number) {
   const template = await prisma.staffShiftTemplate.findFirst({ where: { id, deletedAt: null } });
   if (!template) throw ApiError.notFound("Shift template not found");
   return template;
@@ -27,7 +27,7 @@ export async function createShiftTemplate(input: CreateShiftTemplateInput) {
   return prisma.staffShiftTemplate.create({ data: input });
 }
 
-export async function updateShiftTemplate(id: string, input: UpdateShiftTemplateInput) {
+export async function updateShiftTemplate(id: number, input: UpdateShiftTemplateInput) {
   const existing = await getShiftTemplate(id);
   const startTime = input.startTime ?? existing.startTime;
   const endTime = input.endTime ?? existing.endTime;
@@ -35,7 +35,7 @@ export async function updateShiftTemplate(id: string, input: UpdateShiftTemplate
   return prisma.staffShiftTemplate.update({ where: { id }, data: input });
 }
 
-export async function deleteShiftTemplate(id: string) {
+export async function deleteShiftTemplate(id: number) {
   await getShiftTemplate(id);
   await prisma.staffShiftTemplate.update({ where: { id }, data: { deletedAt: new Date(), isActive: false } });
 }

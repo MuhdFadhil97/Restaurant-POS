@@ -25,7 +25,7 @@ export function StockAdjustmentModal({ product, onClose }: { product: Product | 
       await adjustStock.mutateAsync({
         outletId: outletId!,
         productId: product!.id,
-        variantId: variantId || undefined,
+        variantId: variantId ? Number(variantId) : undefined,
         type,
         quantityChange: signedQty,
         reason: reason || undefined,

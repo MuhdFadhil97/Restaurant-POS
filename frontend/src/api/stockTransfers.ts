@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "./client";
 import { StockTransferDto } from "./types";
 
-export function useStockTransfers(outletId?: string) {
+export function useStockTransfers(outletId?: number) {
   return useQuery({
     queryKey: ["stock-transfers", outletId],
     queryFn: async () => (await apiClient.get<StockTransferDto[]>("/stock-transfers", { params: { outletId } })).data,
@@ -14,10 +14,10 @@ export function useCreateStockTransfer() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (input: {
-      fromOutletId: string;
-      toOutletId: string;
+      fromOutletId: number;
+      toOutletId: number;
       notes?: string;
-      items: { productId: string; variantId?: string; quantity: number }[];
+      items: { productId: number; variantId?: number; quantity: number }[];
     }) => (await apiClient.post<StockTransferDto>("/stock-transfers", input)).data,
     onSuccess: () => qc.invalidateQueries({ queryKey: ["stock-transfers"] }),
   });
@@ -26,7 +26,7 @@ export function useCreateStockTransfer() {
 export function useSendStockTransfer() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (id: string) => (await apiClient.post<StockTransferDto>(`/stock-transfers/${id}/send`)).data,
+    mutationFn: async (id: number) => (await apiClient.post<StockTransferDto>(`/stock-transfers/${id}/send`)).data,
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["stock-transfers"] });
       qc.invalidateQueries({ queryKey: ["products"] });
@@ -37,7 +37,7 @@ export function useSendStockTransfer() {
 export function useReceiveStockTransfer() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (id: string) => (await apiClient.post<StockTransferDto>(`/stock-transfers/${id}/receive`)).data,
+    mutationFn: async (id: number) => (await apiClient.post<StockTransferDto>(`/stock-transfers/${id}/receive`)).data,
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["stock-transfers"] });
       qc.invalidateQueries({ queryKey: ["products"] });
@@ -48,7 +48,7 @@ export function useReceiveStockTransfer() {
 export function useCancelStockTransfer() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (id: string) => (await apiClient.post<StockTransferDto>(`/stock-transfers/${id}/cancel`)).data,
+    mutationFn: async (id: number) => (await apiClient.post<StockTransferDto>(`/stock-transfers/${id}/cancel`)).data,
     onSuccess: () => qc.invalidateQueries({ queryKey: ["stock-transfers"] }),
   });
 }

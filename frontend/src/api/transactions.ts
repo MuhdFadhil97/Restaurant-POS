@@ -3,8 +3,8 @@ import { apiClient } from "./client";
 import { PaymentMethod, TransactionDto, TransactionStatus } from "./types";
 
 export interface TransactionListFilters {
-  outletId?: string;
-  cashierId?: string;
+  outletId?: number;
+  cashierId?: number;
   status?: TransactionStatus;
   paymentMethod?: PaymentMethod;
   dateFrom?: string;
@@ -19,11 +19,11 @@ export function useTransactions(filters: TransactionListFilters) {
   });
 }
 
-export function useHeldTransactions(outletId?: string) {
+export function useHeldTransactions(outletId?: number) {
   return useTransactions({ outletId, status: "HELD" });
 }
 
-export function useTransaction(id?: string) {
+export function useTransaction(id?: number) {
   return useQuery({
     queryKey: ["transaction", id],
     queryFn: async () => (await apiClient.get<TransactionDto>(`/transactions/${id}`)).data,
@@ -32,12 +32,12 @@ export function useTransaction(id?: string) {
 }
 
 interface DraftInput {
-  outletId: string;
-  tableId?: string;
-  customerId?: string;
-  orderDiscountId?: string;
+  outletId: number;
+  tableId?: number;
+  customerId?: number;
+  orderDiscountId?: number;
   notes?: string;
-  items?: { productId: string; variantId?: string; quantity: number; discountId?: string }[];
+  items?: { productId: number; variantId?: number; quantity: number; discountId?: number }[];
 }
 
 export function useCreateDraft() {
@@ -58,11 +58,11 @@ export function useAddItem() {
       transactionId,
       ...input
     }: {
-      transactionId: string;
-      productId: string;
-      variantId?: string;
+      transactionId: number;
+      productId: number;
+      variantId?: number;
       quantity: number;
-      discountId?: string;
+      discountId?: number;
     }) => (await apiClient.post<TransactionDto>(`/transactions/${transactionId}/items`, input)).data,
     onSuccess: (data) => {
       qc.setQueryData(["transaction", data.id], data);
@@ -80,10 +80,10 @@ export function useUpdateItem() {
       quantity,
       discountId,
     }: {
-      transactionId: string;
-      itemId: string;
+      transactionId: number;
+      itemId: number;
       quantity?: number;
-      discountId?: string | null;
+      discountId?: number | null;
     }) =>
       (
         await apiClient.patch<TransactionDto>(`/transactions/${transactionId}/items/${itemId}`, {
@@ -101,7 +101,7 @@ export function useUpdateItem() {
 export function useRemoveItem() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ transactionId, itemId }: { transactionId: string; itemId: string }) =>
+    mutationFn: async ({ transactionId, itemId }: { transactionId: number; itemId: number }) =>
       (await apiClient.delete<TransactionDto>(`/transactions/${transactionId}/items/${itemId}`)).data,
     onSuccess: (data) => {
       qc.setQueryData(["transaction", data.id], data);
@@ -117,8 +117,8 @@ export function useUpdateTransaction() {
       id,
       input,
     }: {
-      id: string;
-      input: { customerId?: string | null; tableId?: string | null; orderDiscountId?: string | null; notes?: string };
+      id: number;
+      input: { customerId?: number | null; tableId?: number | null; orderDiscountId?: number | null; notes?: string };
     }) => (await apiClient.patch<TransactionDto>(`/transactions/${id}`, input)).data,
     onSuccess: (data) => {
       qc.setQueryData(["transaction", data.id], data);
@@ -134,7 +134,7 @@ export function useFinalizeTransaction() {
       id,
       payments,
     }: {
-      id: string;
+      id: number;
       payments: { method: PaymentMethod; amount: number; reference?: string }[];
     }) => (await apiClient.post<TransactionDto>(`/transactions/${id}/finalize`, { payments })).data,
     onSuccess: (data) => {
@@ -170,9 +170,9 @@ export function useVoidTransaction() {
       approverId,
       approverPassword,
     }: {
-      id: string;
+      id: number;
       reason: string;
-      approverId?: string;
+      approverId?: number;
       approverPassword?: string;
     }) =>
       (await apiClient.post<TransactionDto>(`/transactions/${id}/void`, { reason, approverId, approverPassword }))
@@ -195,9 +195,9 @@ export function useRefundTransaction() {
       approverId,
       approverPassword,
     }: {
-      id: string;
+      id: number;
       reason: string;
-      approverId?: string;
+      approverId?: number;
       approverPassword?: string;
     }) =>
       (await apiClient.post<TransactionDto>(`/transactions/${id}/refund`, { reason, approverId, approverPassword }))

@@ -2,12 +2,12 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "./client";
 import { StaffShiftSchedule } from "./types";
 
-export function useOutletStaff(outletId?: string) {
+export function useOutletStaff(outletId?: number) {
   return useQuery({
     queryKey: ["shift-schedule-staff", outletId],
     queryFn: async () =>
       (
-        await apiClient.get<{ id: string; name: string; role: string }[]>("/shift-schedules/staff", {
+        await apiClient.get<{ id: number; name: string; role: string }[]>("/shift-schedules/staff", {
           params: { outletId },
         })
       ).data,
@@ -15,7 +15,7 @@ export function useOutletStaff(outletId?: string) {
   });
 }
 
-export function useShiftSchedulesForMonth(outletId?: string, month?: string) {
+export function useShiftSchedulesForMonth(outletId?: number, month?: string) {
   return useQuery({
     queryKey: ["shift-schedules", outletId, month],
     queryFn: async () =>
@@ -36,7 +36,7 @@ export function useMyShiftSchedules(from?: string, to?: string) {
 export function useCreateShiftSchedule() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (input: { outletId: string; userId: string; shiftTemplateId: string; date: string; notes?: string }) =>
+    mutationFn: async (input: { outletId: number; userId: number; shiftTemplateId: number; date: string; notes?: string }) =>
       (
         await apiClient.post<{ schedule: StaffShiftSchedule; overlapWarning: string | null }>(
           "/shift-schedules",
@@ -50,7 +50,7 @@ export function useCreateShiftSchedule() {
 export function useUpdateShiftSchedule() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, ...input }: { id: string; shiftTemplateId?: string; notes?: string }) =>
+    mutationFn: async ({ id, ...input }: { id: number; shiftTemplateId?: number; notes?: string }) =>
       (await apiClient.patch<StaffShiftSchedule>(`/shift-schedules/${id}`, input)).data,
     onSuccess: () => qc.invalidateQueries({ queryKey: ["shift-schedules"] }),
   });
@@ -59,7 +59,7 @@ export function useUpdateShiftSchedule() {
 export function useDeleteShiftSchedule() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (id: string) => {
+    mutationFn: async (id: number) => {
       await apiClient.delete(`/shift-schedules/${id}`);
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["shift-schedules"] }),

@@ -8,7 +8,7 @@ import { Button, ErrorMessage, Input, Select } from "@/components/ui";
 import { getErrorMessage } from "@/api/client";
 
 interface VariantDraft {
-  id?: string;
+  id?: number;
   name: string;
   value: string;
   priceAdjustment: number;

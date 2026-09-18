@@ -29,7 +29,7 @@ export function AuditLogTab() {
                   <td className="px-4 py-2">{l.user?.name ?? "-"}</td>
                   <td className="px-4 py-2 font-mono text-xs">{l.action}</td>
                   <td className="px-4 py-2 text-xs text-gray-500">
-                    {l.entityType} {l.entityId.slice(0, 8)}
+                    {l.entityType} #{l.entityId}
                   </td>
                 </tr>
               ))}

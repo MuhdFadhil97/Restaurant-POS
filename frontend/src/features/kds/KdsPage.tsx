@@ -21,7 +21,7 @@ const nextStatus: Record<PrepStatus, PrepStatus | null> = {
 
 export function KdsPage() {
   const outletId = useOutletStore((s) => s.activeOutletId);
-  const [stationId, setStationId] = useState<string>("");
+  const [stationId, setStationId] = useState<number | "">("");
   const { data: stations } = useKitchenStations(outletId ?? undefined);
   const { data: queue, isLoading } = useKdsQueue(outletId ?? undefined, stationId || undefined);
   const updateStatus = useUpdatePrepStatus();

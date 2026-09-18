@@ -18,13 +18,13 @@ export async function listPurchaseOrders(query: ListQuery) {
   });
 }
 
-export async function getPurchaseOrder(id: string) {
+export async function getPurchaseOrder(id: number) {
   const po = await prisma.purchaseOrder.findUnique({ where: { id }, include: detailInclude });
   if (!po) throw ApiError.notFound("Purchase order not found");
   return po;
 }
 
-export async function createPurchaseOrder(createdByUserId: string, input: CreatePurchaseOrderInput) {
+export async function createPurchaseOrder(createdByUserId: number, input: CreatePurchaseOrderInput) {
   return prisma.purchaseOrder.create({
     data: {
       outletId: input.outletId,
@@ -38,7 +38,7 @@ export async function createPurchaseOrder(createdByUserId: string, input: Create
   });
 }
 
-export async function markOrdered(id: string) {
+export async function markOrdered(id: number) {
   const po = await prisma.purchaseOrder.findUnique({ where: { id } });
   if (!po) throw ApiError.notFound("Purchase order not found");
   if (po.status !== "DRAFT") throw ApiError.badRequest("Only draft purchase orders can be marked ordered");
@@ -49,7 +49,7 @@ export async function markOrdered(id: string) {
   });
 }
 
-export async function cancelPurchaseOrder(id: string) {
+export async function cancelPurchaseOrder(id: number) {
   const po = await prisma.purchaseOrder.findUnique({ where: { id } });
   if (!po) throw ApiError.notFound("Purchase order not found");
   if (po.status === "RECEIVED") throw ApiError.badRequest("A fully received purchase order cannot be cancelled");
@@ -59,7 +59,7 @@ export async function cancelPurchaseOrder(id: string) {
 // Receiving increments ProductStock and records an InventoryMovement per
 // line, atomically, then rolls the PO status up to PARTIALLY_RECEIVED or
 // RECEIVED depending on whether every line is now fully received.
-export async function receivePurchaseOrder(id: string, userId: string, input: ReceiveInput) {
+export async function receivePurchaseOrder(id: number, userId: number, input: ReceiveInput) {
   return prisma.$transaction(async (tx) => {
     const po = await tx.purchaseOrder.findUnique({ where: { id }, include: { items: true } });
     if (!po) throw ApiError.notFound("Purchase order not found");

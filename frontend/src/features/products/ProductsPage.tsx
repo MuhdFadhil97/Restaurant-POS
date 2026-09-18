@@ -54,7 +54,7 @@ export function ProductsPage() {
 
   const [skuSearch, setSkuSearch] = useState("");
   const [nameSearch, setNameSearch] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState<string | "all">("all");
+  const [categoryFilter, setCategoryFilter] = useState<number | "all">("all");
   const [sort, setSort] = useState<{ column: SortColumn; direction: SortDirection } | null>(null);
 
   function handleSort(column: SortColumn) {
@@ -142,7 +142,10 @@ export function ProductsPage() {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <Input placeholder="Search SKU..." value={skuSearch} onChange={(e) => setSkuSearch(e.target.value)} />
           <Input placeholder="Search Name..." value={nameSearch} onChange={(e) => setNameSearch(e.target.value)} />
-          <Select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}>
+          <Select
+            value={categoryFilter}
+            onChange={(e) => setCategoryFilter(e.target.value === "all" ? "all" : Number(e.target.value))}
+          >
             <option value="all">All Categories</option>
             {categories?.map((c) => (
               <option key={c.id} value={c.id}>

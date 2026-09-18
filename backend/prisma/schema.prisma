@@ -101,23 +101,23 @@ enum StockTransferStatus {
 // ─────────────────────────────────────────────────────────────────────────
 
 model Outlet {
-  id        String   @id @default(uuid()) @db.Uuid
-  name      String
-  address   String?
-  phone     String?
-  isActive  Boolean  @default(true)
+  id       Int     @id @default(autoincrement())
+  name     String
+  address  String?
+  phone    String?
+  isActive Boolean @default(true)
 
   // Receipt template settings (business name reuses `name` above).
-  receiptLogoUrl   String? @map("receipt_logo_url")
-  receiptFooter    String? @map("receipt_footer")
+  receiptLogoUrl String? @map("receipt_logo_url")
+  receiptFooter  String? @map("receipt_footer")
 
   // Loyalty program settings (points earned per currency unit spent, and
   // the currency value of one point when redeemed).
   loyaltyEarnRate   Decimal @default(1) @map("loyalty_earn_rate") @db.Decimal(6, 2)
   loyaltyRedeemRate Decimal @default(0.01) @map("loyalty_redeem_rate") @db.Decimal(6, 4)
 
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
   deletedAt DateTime? @map("deleted_at")
 
   userAccess          UserOutlet[]
@@ -140,34 +140,34 @@ model Outlet {
 }
 
 model User {
-  id           String    @id @default(uuid()) @db.Uuid
-  email        String    @unique
-  username     String    @unique
-  passwordHash String    @map("password_hash")
+  id           Int     @id @default(autoincrement())
+  email        String  @unique
+  username     String  @unique
+  passwordHash String  @map("password_hash")
   name         String
   role         Role
-  isActive     Boolean   @default(true) @map("is_active")
+  isActive     Boolean @default(true) @map("is_active")
 
   // Login security (see [[verify-ui-by-driving-it]]-style incremental hardening).
   failedLoginAttempts Int       @default(0) @map("failed_login_attempts")
   lockedUntil         DateTime? @map("locked_until")
 
-  createdAt    DateTime  @default(now()) @map("created_at")
-  updatedAt    DateTime  @updatedAt @map("updated_at")
-  deletedAt    DateTime? @map("deleted_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
 
-  outletAccess        UserOutlet[]
-  cashierTransactions Transaction[]        @relation("CashierTransactions")
-  voidedTransactions  Transaction[]        @relation("VoidedByUser")
-  approvedTransactions Transaction[]       @relation("ApprovedByUser")
-  inventoryMovements  InventoryMovement[]
-  cashSessions        CashSession[]
-  auditLogs           AuditLog[]
-  purchaseOrdersCreated PurchaseOrder[]
+  outletAccess            UserOutlet[]
+  cashierTransactions     Transaction[]        @relation("CashierTransactions")
+  voidedTransactions      Transaction[]        @relation("VoidedByUser")
+  approvedTransactions    Transaction[]        @relation("ApprovedByUser")
+  inventoryMovements      InventoryMovement[]
+  cashSessions            CashSession[]
+  auditLogs               AuditLog[]
+  purchaseOrdersCreated   PurchaseOrder[]
   stockTransfersRequested StockTransfer[]
-  staffShiftSchedules    StaffShiftSchedule[] @relation("StaffShiftScheduleUser")
-  createdShiftSchedules  StaffShiftSchedule[] @relation("StaffShiftScheduleCreatedBy")
-  staffAttendance        StaffAttendance[]
+  staffShiftSchedules     StaffShiftSchedule[] @relation("StaffShiftScheduleUser")
+  createdShiftSchedules   StaffShiftSchedule[] @relation("StaffShiftScheduleCreatedBy")
+  staffAttendance         StaffAttendance[]
 
   @@map("users")
 }
@@ -175,9 +175,9 @@ model User {
 // Many-to-many: which outlets a user can operate in. Cashiers usually get
 // exactly one row; managers/admins may be granted several.
 model UserOutlet {
-  id        String   @id @default(uuid()) @db.Uuid
-  userId    String   @map("user_id") @db.Uuid
-  outletId  String   @map("outlet_id") @db.Uuid
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  outletId  Int      @map("outlet_id")
   createdAt DateTime @default(now()) @map("created_at")
 
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -192,7 +192,7 @@ model UserOutlet {
 // ─────────────────────────────────────────────────────────────────────────
 
 model ProductCategory {
-  id        String    @id @default(uuid()) @db.Uuid
+  id        Int       @id @default(autoincrement())
   name      String
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @updatedAt @map("updated_at")
@@ -204,24 +204,24 @@ model ProductCategory {
 }
 
 model Product {
-  id                String    @id @default(uuid()) @db.Uuid
-  sku               String    @unique
+  id                Int     @id @default(autoincrement())
+  sku               String  @unique
   name              String
-  categoryId        String?   @map("category_id") @db.Uuid
-  unitPrice         Decimal   @map("unit_price") @db.Decimal(12, 2)
-  costPrice         Decimal   @map("cost_price") @db.Decimal(12, 2)
-  taxRateId         String?   @map("tax_rate_id") @db.Uuid
-  unitOfMeasure     String    @map("unit_of_measure")
-  imageUrl          String?   @map("image_url")
-  lowStockThreshold Int       @default(0) @map("low_stock_threshold")
-  isActive          Boolean   @default(true) @map("is_active")
+  categoryId        Int?    @map("category_id")
+  unitPrice         Decimal @map("unit_price") @db.Decimal(12, 2)
+  costPrice         Decimal @map("cost_price") @db.Decimal(12, 2)
+  taxRateId         Int?    @map("tax_rate_id")
+  unitOfMeasure     String  @map("unit_of_measure")
+  imageUrl          String? @map("image_url")
+  lowStockThreshold Int     @default(0) @map("low_stock_threshold")
+  isActive          Boolean @default(true) @map("is_active")
 
   // F&B order routing: which prep station (e.g. Kitchen, Bar) makes this.
-  stationId         String?   @map("station_id") @db.Uuid
+  stationId Int? @map("station_id")
 
-  createdAt         DateTime  @default(now()) @map("created_at")
-  updatedAt         DateTime  @updatedAt @map("updated_at")
-  deletedAt         DateTime? @map("deleted_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
 
   category ProductCategory? @relation(fields: [categoryId], references: [id])
   taxRate  TaxRate?         @relation(fields: [taxRateId], references: [id])
@@ -239,15 +239,15 @@ model Product {
 }
 
 model ProductVariant {
-  id             String    @id @default(uuid()) @db.Uuid
-  productId      String    @map("product_id") @db.Uuid
-  name           String // e.g. "Size", "Flavor"
-  value          String // e.g. "Large", "Chocolate"
-  skuSuffix      String?   @map("sku_suffix")
-  priceAdjustment Decimal  @default(0) @map("price_adjustment") @db.Decimal(12, 2)
-  createdAt      DateTime  @default(now()) @map("created_at")
-  updatedAt      DateTime  @updatedAt @map("updated_at")
-  deletedAt      DateTime? @map("deleted_at")
+  id              Int       @id @default(autoincrement())
+  productId       Int       @map("product_id")
+  name            String // e.g. "Size", "Flavor"
+  value           String // e.g. "Large", "Chocolate"
+  skuSuffix       String?   @map("sku_suffix")
+  priceAdjustment Decimal   @default(0) @map("price_adjustment") @db.Decimal(12, 2)
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  deletedAt       DateTime? @map("deleted_at")
 
   product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
@@ -262,10 +262,10 @@ model ProductVariant {
 
 // Current stock level per outlet (and optionally per variant).
 model ProductStock {
-  id        String   @id @default(uuid()) @db.Uuid
-  productId String   @map("product_id") @db.Uuid
-  variantId String?  @map("variant_id") @db.Uuid
-  outletId  String   @map("outlet_id") @db.Uuid
+  id        Int      @id @default(autoincrement())
+  productId Int      @map("product_id")
+  variantId Int?     @map("variant_id")
+  outletId  Int      @map("outlet_id")
   quantity  Int      @default(0)
   updatedAt DateTime @updatedAt @map("updated_at")
 
@@ -279,20 +279,20 @@ model ProductStock {
 
 // Audit trail of every stock change, per outlet.
 model InventoryMovement {
-  id              String       @id @default(uuid()) @db.Uuid
-  outletId        String       @map("outlet_id") @db.Uuid
-  productId       String       @map("product_id") @db.Uuid
-  variantId       String?      @map("variant_id") @db.Uuid
-  type            MovementType
-  quantityChange  Int          @map("quantity_change") // positive = in, negative = out
-  reason          String?
-  performedByUserId String     @map("performed_by_user_id") @db.Uuid
-  createdAt       DateTime     @default(now()) @map("created_at")
+  id                Int          @id @default(autoincrement())
+  outletId          Int          @map("outlet_id")
+  productId         Int          @map("product_id")
+  variantId         Int?         @map("variant_id")
+  type              MovementType
+  quantityChange    Int          @map("quantity_change") // positive = in, negative = out
+  reason            String?
+  performedByUserId Int          @map("performed_by_user_id")
+  createdAt         DateTime     @default(now()) @map("created_at")
 
-  outlet  Outlet          @relation(fields: [outletId], references: [id])
-  product Product         @relation(fields: [productId], references: [id])
-  variant ProductVariant? @relation(fields: [variantId], references: [id])
-  performedBy User        @relation(fields: [performedByUserId], references: [id])
+  outlet      Outlet          @relation(fields: [outletId], references: [id])
+  product     Product         @relation(fields: [productId], references: [id])
+  variant     ProductVariant? @relation(fields: [variantId], references: [id])
+  performedBy User            @relation(fields: [performedByUserId], references: [id])
 
   @@map("inventory_movements")
 }
@@ -307,11 +307,11 @@ enum TableShape {
 }
 
 model Table {
-  id        String      @id @default(uuid()) @db.Uuid
-  outletId  String      @map("outlet_id") @db.Uuid
-  name      String
-  capacity  Int         @default(2)
-  status    TableStatus @default(AVAILABLE)
+  id       Int         @id @default(autoincrement())
+  outletId Int         @map("outlet_id")
+  name     String
+  capacity Int         @default(2)
+  status   TableStatus @default(AVAILABLE)
 
   // Floor plan layout — nullable; null means "not yet positioned" (POS
   // falls back to the plain table strip until an outlet has a saved layout).
@@ -328,9 +328,9 @@ model Table {
   reservedAt        DateTime? @map("reserved_at")
   reservedPartySize Int?      @map("reserved_party_size")
 
-  createdAt DateTime    @default(now()) @map("created_at")
-  updatedAt DateTime    @updatedAt @map("updated_at")
-  deletedAt DateTime?   @map("deleted_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
 
   outlet       Outlet        @relation(fields: [outletId], references: [id])
   transactions Transaction[]
@@ -341,8 +341,8 @@ model Table {
 // A prep station in the kitchen/bar that a Kitchen Display screen filters
 // to (e.g. "Kitchen", "Bar", "Dessert").
 model KitchenStation {
-  id        String    @id @default(uuid()) @db.Uuid
-  outletId  String    @map("outlet_id") @db.Uuid
+  id        Int       @id @default(autoincrement())
+  outletId  Int       @map("outlet_id")
   name      String
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @updatedAt @map("updated_at")
@@ -359,14 +359,14 @@ model KitchenStation {
 // ─────────────────────────────────────────────────────────────────────────
 
 model Customer {
-  id                 String          @id @default(uuid()) @db.Uuid
-  name               String
-  identificationNo   String?         @map("identification_no")
-  dateOfBirth        DateTime?       @map("date_of_birth") @db.Date
-  phone              String?
-  email              String?
-  address            String?
-  source             CustomerSource? @map("source")
+  id               Int             @id @default(autoincrement())
+  name             String
+  identificationNo String?         @map("identification_no")
+  dateOfBirth      DateTime?       @map("date_of_birth") @db.Date
+  phone            String?
+  email            String?
+  address          String?
+  source           CustomerSource? @map("source")
 
   // Loyalty points balance, accrued/redeemed on completed transactions.
   pointsBalance Int @default(0) @map("points_balance")
@@ -385,37 +385,37 @@ model Customer {
 // ─────────────────────────────────────────────────────────────────────────
 
 model Discount {
-  id        String        @id @default(uuid()) @db.Uuid
-  name      String
-  type      DiscountType
-  scope     DiscountScope
-  value     Decimal       @db.Decimal(12, 2) // percentage (0-100) or fixed amount
-  code      String?       @unique
-  isActive  Boolean       @default(true) @map("is_active")
+  id       Int           @id @default(autoincrement())
+  name     String
+  type     DiscountType
+  scope    DiscountScope
+  value    Decimal       @db.Decimal(12, 2) // percentage (0-100) or fixed amount
+  code     String?       @unique
+  isActive Boolean       @default(true) @map("is_active")
 
   // Promotion eligibility rules (all optional; null = no constraint).
-  minSpend    Decimal?  @map("min_spend") @db.Decimal(12, 2)
-  startDate   DateTime? @map("start_date")
-  endDate     DateTime? @map("end_date")
-  usageLimit  Int?      @map("usage_limit")
-  usageCount  Int       @default(0) @map("usage_count")
-  productId   String?   @map("product_id") @db.Uuid
-  categoryId  String?   @map("category_id") @db.Uuid
+  minSpend   Decimal?  @map("min_spend") @db.Decimal(12, 2)
+  startDate  DateTime? @map("start_date")
+  endDate    DateTime? @map("end_date")
+  usageLimit Int?      @map("usage_limit")
+  usageCount Int       @default(0) @map("usage_count")
+  productId  Int?      @map("product_id")
+  categoryId Int?      @map("category_id")
 
-  createdAt DateTime      @default(now()) @map("created_at")
-  updatedAt DateTime      @updatedAt @map("updated_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
-  product  Product?  @relation(fields: [productId], references: [id])
+  product Product? @relation(fields: [productId], references: [id])
 
-  transactionItems  TransactionItem[]
-  orderDiscountOn   Transaction[]     @relation("OrderDiscount")
+  transactionItems TransactionItem[]
+  orderDiscountOn  Transaction[]     @relation("OrderDiscount")
 
   @@map("discounts")
 }
 
 model TaxRate {
-  id        String   @id @default(uuid()) @db.Uuid
-  outletId  String   @map("outlet_id") @db.Uuid
+  id        Int      @id @default(autoincrement())
+  outletId  Int      @map("outlet_id")
   name      String
   rate      Decimal  @db.Decimal(5, 2) // percentage, e.g. 6.00
   isDefault Boolean  @default(false) @map("is_default")
@@ -433,7 +433,7 @@ model TaxRate {
 // ─────────────────────────────────────────────────────────────────────────
 
 model GiftCard {
-  id        String    @id @default(uuid()) @db.Uuid
+  id        Int       @id @default(autoincrement())
   code      String    @unique
   balance   Decimal   @db.Decimal(12, 2)
   isActive  Boolean   @default(true) @map("is_active")
@@ -450,21 +450,21 @@ model GiftCard {
 // ─────────────────────────────────────────────────────────────────────────
 
 model Transaction {
-  id         String            @id @default(uuid()) @db.Uuid
-  outletId   String            @map("outlet_id") @db.Uuid
-  tableId    String?           @map("table_id") @db.Uuid // set for F&B dine-in
-  customerId String?           @map("customer_id") @db.Uuid
-  cashierId  String            @map("cashier_id") @db.Uuid
+  id         Int               @id @default(autoincrement())
+  outletId   Int               @map("outlet_id")
+  tableId    Int?              @map("table_id") // set for F&B dine-in
+  customerId Int?              @map("customer_id")
+  cashierId  Int               @map("cashier_id")
   status     TransactionStatus @default(OPEN)
 
   // Assigned once, when the transaction first reaches COMPLETED. Format: RECYYYYMMDDXXXXXX.
   receiptNumber String? @unique @map("receipt_number")
 
-  subtotal      Decimal @default(0) @db.Decimal(12, 2)
-  discountTotal Decimal @default(0) @map("discount_total") @db.Decimal(12, 2)
-  orderDiscountId String? @map("order_discount_id") @db.Uuid
-  taxTotal      Decimal @default(0) @map("tax_total") @db.Decimal(12, 2)
-  total         Decimal @default(0) @db.Decimal(12, 2)
+  subtotal        Decimal @default(0) @db.Decimal(12, 2)
+  discountTotal   Decimal @default(0) @map("discount_total") @db.Decimal(12, 2)
+  orderDiscountId Int?    @map("order_discount_id")
+  taxTotal        Decimal @default(0) @map("tax_total") @db.Decimal(12, 2)
+  total           Decimal @default(0) @db.Decimal(12, 2)
 
   // Loyalty accrual/redemption recorded on the completed transaction.
   pointsEarned   Int @default(0) @map("points_earned")
@@ -472,21 +472,21 @@ model Transaction {
 
   notes String?
 
-  voidReason         String?   @map("void_reason")
-  voidedAt           DateTime? @map("voided_at")
-  voidedByUserId     String?   @map("voided_by_user_id") @db.Uuid
-  approvedByUserId   String?   @map("approved_by_user_id") @db.Uuid
+  voidReason       String?   @map("void_reason")
+  voidedAt         DateTime? @map("voided_at")
+  voidedByUserId   Int?      @map("voided_by_user_id")
+  approvedByUserId Int?      @map("approved_by_user_id")
 
-  createdAt DateTime  @default(now()) @map("created_at")
-  updatedAt DateTime  @updatedAt @map("updated_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
-  outlet         Outlet    @relation(fields: [outletId], references: [id])
-  table          Table?    @relation(fields: [tableId], references: [id])
-  customer       Customer? @relation(fields: [customerId], references: [id])
-  cashier        User      @relation("CashierTransactions", fields: [cashierId], references: [id])
-  voidedBy       User?     @relation("VoidedByUser", fields: [voidedByUserId], references: [id])
-  approvedBy     User?     @relation("ApprovedByUser", fields: [approvedByUserId], references: [id])
-  orderDiscount  Discount? @relation("OrderDiscount", fields: [orderDiscountId], references: [id])
+  outlet        Outlet    @relation(fields: [outletId], references: [id])
+  table         Table?    @relation(fields: [tableId], references: [id])
+  customer      Customer? @relation(fields: [customerId], references: [id])
+  cashier       User      @relation("CashierTransactions", fields: [cashierId], references: [id])
+  voidedBy      User?     @relation("VoidedByUser", fields: [voidedByUserId], references: [id])
+  approvedBy    User?     @relation("ApprovedByUser", fields: [approvedByUserId], references: [id])
+  orderDiscount Discount? @relation("OrderDiscount", fields: [orderDiscountId], references: [id])
 
   items    TransactionItem[]
   payments Payment[]
@@ -505,41 +505,41 @@ model ReceiptSequence {
 }
 
 model TransactionItem {
-  id             String   @id @default(uuid()) @db.Uuid
-  transactionId  String   @map("transaction_id") @db.Uuid
-  productId      String   @map("product_id") @db.Uuid
-  variantId      String?  @map("variant_id") @db.Uuid
+  id             Int     @id @default(autoincrement())
+  transactionId  Int     @map("transaction_id")
+  productId      Int     @map("product_id")
+  variantId      Int?    @map("variant_id")
   quantity       Int
-  unitPrice      Decimal  @map("unit_price") @db.Decimal(12, 2)
-  discountId     String?  @map("discount_id") @db.Uuid
-  discountAmount Decimal  @default(0) @map("discount_amount") @db.Decimal(12, 2)
-  taxAmount      Decimal  @default(0) @map("tax_amount") @db.Decimal(12, 2)
-  lineTotal      Decimal  @map("line_total") @db.Decimal(12, 2)
+  unitPrice      Decimal @map("unit_price") @db.Decimal(12, 2)
+  discountId     Int?    @map("discount_id")
+  discountAmount Decimal @default(0) @map("discount_amount") @db.Decimal(12, 2)
+  taxAmount      Decimal @default(0) @map("tax_amount") @db.Decimal(12, 2)
+  lineTotal      Decimal @map("line_total") @db.Decimal(12, 2)
 
   // Kitchen Display order-routing status.
-  prepStatus   PrepStatus @default(QUEUED) @map("prep_status")
-  preparingAt  DateTime?  @map("preparing_at")
-  readyAt      DateTime?  @map("ready_at")
-  servedAt     DateTime?  @map("served_at")
+  prepStatus  PrepStatus @default(QUEUED) @map("prep_status")
+  preparingAt DateTime?  @map("preparing_at")
+  readyAt     DateTime?  @map("ready_at")
+  servedAt    DateTime?  @map("served_at")
 
-  createdAt      DateTime @default(now()) @map("created_at")
+  createdAt DateTime @default(now()) @map("created_at")
 
-  transaction Transaction    @relation(fields: [transactionId], references: [id], onDelete: Cascade)
-  product     Product        @relation(fields: [productId], references: [id])
+  transaction Transaction     @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  product     Product         @relation(fields: [productId], references: [id])
   variant     ProductVariant? @relation(fields: [variantId], references: [id])
-  discount    Discount?      @relation(fields: [discountId], references: [id])
+  discount    Discount?       @relation(fields: [discountId], references: [id])
 
   @@map("transaction_items")
 }
 
 model Payment {
-  id            String        @id @default(uuid()) @db.Uuid
-  transactionId String        @map("transaction_id") @db.Uuid
+  id            Int           @id @default(autoincrement())
+  transactionId Int           @map("transaction_id")
   method        PaymentMethod
   amount        Decimal       @db.Decimal(12, 2)
   reference     String?
   remark        String?
-  giftCardId    String?       @map("gift_card_id") @db.Uuid
+  giftCardId    Int?          @map("gift_card_id")
   createdAt     DateTime      @default(now()) @map("created_at")
 
   transaction Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
@@ -553,16 +553,16 @@ model Payment {
 // ─────────────────────────────────────────────────────────────────────────
 
 model CashSession {
-  id            String            @id @default(uuid()) @db.Uuid
-  outletId      String            @map("outlet_id") @db.Uuid
-  userId        String            @map("user_id") @db.Uuid
-  status        CashSessionStatus @default(OPEN)
-  openingCash   Decimal           @map("opening_cash") @db.Decimal(12, 2)
-  expectedCash  Decimal?          @map("expected_cash") @db.Decimal(12, 2)
-  actualCash    Decimal?          @map("actual_cash") @db.Decimal(12, 2)
-  difference    Decimal?          @db.Decimal(12, 2)
-  openedAt      DateTime          @default(now()) @map("opened_at")
-  closedAt      DateTime?         @map("closed_at")
+  id           Int               @id @default(autoincrement())
+  outletId     Int               @map("outlet_id")
+  userId       Int               @map("user_id")
+  status       CashSessionStatus @default(OPEN)
+  openingCash  Decimal           @map("opening_cash") @db.Decimal(12, 2)
+  expectedCash Decimal?          @map("expected_cash") @db.Decimal(12, 2)
+  actualCash   Decimal?          @map("actual_cash") @db.Decimal(12, 2)
+  difference   Decimal?          @db.Decimal(12, 2)
+  openedAt     DateTime          @default(now()) @map("opened_at")
+  closedAt     DateTime?         @map("closed_at")
 
   outlet Outlet @relation(fields: [outletId], references: [id])
   user   User   @relation(fields: [userId], references: [id])
@@ -582,8 +582,8 @@ enum AttendanceStatus {
 // ─────────────────────────────────────────────────────────────────────────
 
 model StaffShiftTemplate {
-  id           String    @id @default(uuid()) @db.Uuid
-  outletId     String    @map("outlet_id") @db.Uuid
+  id           Int       @id @default(autoincrement())
+  outletId     Int       @map("outlet_id")
   name         String
   startTime    String    @map("start_time") // "HH:mm", 24h
   endTime      String    @map("end_time") // "HH:mm"; endTime <= startTime means overnight (crosses midnight)
@@ -600,13 +600,13 @@ model StaffShiftTemplate {
 }
 
 model StaffShiftSchedule {
-  id              String   @id @default(uuid()) @db.Uuid
-  outletId        String   @map("outlet_id") @db.Uuid
-  userId          String   @map("user_id") @db.Uuid
-  shiftTemplateId String   @map("shift_template_id") @db.Uuid
+  id              Int      @id @default(autoincrement())
+  outletId        Int      @map("outlet_id")
+  userId          Int      @map("user_id")
+  shiftTemplateId Int      @map("shift_template_id")
   date            DateTime @map("date") @db.Date
   notes           String?
-  createdByUserId String   @map("created_by_user_id") @db.Uuid
+  createdByUserId Int      @map("created_by_user_id")
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
 
@@ -623,10 +623,10 @@ model StaffShiftSchedule {
 }
 
 model StaffAttendance {
-  id                 String           @id @default(uuid()) @db.Uuid
-  outletId           String           @map("outlet_id") @db.Uuid
-  userId             String           @map("user_id") @db.Uuid
-  scheduleId         String?          @map("schedule_id") @db.Uuid // null = unscheduled/ad-hoc
+  id                 Int              @id @default(autoincrement())
+  outletId           Int              @map("outlet_id")
+  userId             Int              @map("user_id")
+  scheduleId         Int?             @map("schedule_id") // null = unscheduled/ad-hoc
   status             AttendanceStatus @default(CLOCKED_IN)
   clockInAt          DateTime         @map("clock_in_at")
   clockOutAt         DateTime?        @map("clock_out_at")
@@ -648,8 +648,8 @@ model StaffAttendance {
 }
 
 model StaffBreakRecord {
-  id           String    @id @default(uuid()) @db.Uuid
-  attendanceId String    @map("attendance_id") @db.Uuid
+  id           Int       @id @default(autoincrement())
+  attendanceId Int       @map("attendance_id")
   breakStart   DateTime  @map("break_start")
   breakEnd     DateTime? @map("break_end")
   createdAt    DateTime  @default(now()) @map("created_at")
@@ -664,16 +664,16 @@ model StaffBreakRecord {
 // ─────────────────────────────────────────────────────────────────────────
 
 model Supplier {
-  id            String    @id @default(uuid()) @db.Uuid
-  name          String
-  contactName   String?   @map("contact_name")
-  email         String?
-  phone         String?
-  paymentTerms  String?   @map("payment_terms")
-  isActive      Boolean   @default(true) @map("is_active")
-  createdAt     DateTime  @default(now()) @map("created_at")
-  updatedAt     DateTime  @updatedAt @map("updated_at")
-  deletedAt     DateTime? @map("deleted_at")
+  id           Int       @id @default(autoincrement())
+  name         String
+  contactName  String?   @map("contact_name")
+  email        String?
+  phone        String?
+  paymentTerms String?   @map("payment_terms")
+  isActive     Boolean   @default(true) @map("is_active")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+  deletedAt    DateTime? @map("deleted_at")
 
   purchaseOrders PurchaseOrder[]
 
@@ -681,31 +681,31 @@ model Supplier {
 }
 
 model PurchaseOrder {
-  id             String              @id @default(uuid()) @db.Uuid
-  outletId       String              @map("outlet_id") @db.Uuid
-  supplierId     String              @map("supplier_id") @db.Uuid
-  status         PurchaseOrderStatus @default(DRAFT)
-  createdByUserId String             @map("created_by_user_id") @db.Uuid
-  orderedAt      DateTime?           @map("ordered_at")
-  expectedAt     DateTime?           @map("expected_at")
-  receivedAt     DateTime?           @map("received_at")
-  notes          String?
-  createdAt      DateTime            @default(now()) @map("created_at")
-  updatedAt      DateTime            @updatedAt @map("updated_at")
+  id              Int                 @id @default(autoincrement())
+  outletId        Int                 @map("outlet_id")
+  supplierId      Int                 @map("supplier_id")
+  status          PurchaseOrderStatus @default(DRAFT)
+  createdByUserId Int                 @map("created_by_user_id")
+  orderedAt       DateTime?           @map("ordered_at")
+  expectedAt      DateTime?           @map("expected_at")
+  receivedAt      DateTime?           @map("received_at")
+  notes           String?
+  createdAt       DateTime            @default(now()) @map("created_at")
+  updatedAt       DateTime            @updatedAt @map("updated_at")
 
-  outlet     Outlet   @relation(fields: [outletId], references: [id])
-  supplier   Supplier @relation(fields: [supplierId], references: [id])
-  createdBy  User     @relation(fields: [createdByUserId], references: [id])
-  items      PurchaseOrderItem[]
+  outlet    Outlet              @relation(fields: [outletId], references: [id])
+  supplier  Supplier            @relation(fields: [supplierId], references: [id])
+  createdBy User                @relation(fields: [createdByUserId], references: [id])
+  items     PurchaseOrderItem[]
 
   @@map("purchase_orders")
 }
 
 model PurchaseOrderItem {
-  id               String  @id @default(uuid()) @db.Uuid
-  purchaseOrderId  String  @map("purchase_order_id") @db.Uuid
-  productId        String  @map("product_id") @db.Uuid
-  variantId        String? @map("variant_id") @db.Uuid
+  id               Int     @id @default(autoincrement())
+  purchaseOrderId  Int     @map("purchase_order_id")
+  productId        Int     @map("product_id")
+  variantId        Int?    @map("variant_id")
   quantityOrdered  Int     @map("quantity_ordered")
   quantityReceived Int     @default(0) @map("quantity_received")
   unitCost         Decimal @map("unit_cost") @db.Decimal(12, 2)
@@ -722,31 +722,31 @@ model PurchaseOrderItem {
 // ─────────────────────────────────────────────────────────────────────────
 
 model StockTransfer {
-  id                String               @id @default(uuid()) @db.Uuid
-  fromOutletId      String               @map("from_outlet_id") @db.Uuid
-  toOutletId        String               @map("to_outlet_id") @db.Uuid
-  status            StockTransferStatus  @default(PENDING)
-  requestedByUserId String               @map("requested_by_user_id") @db.Uuid
-  sentAt            DateTime?            @map("sent_at")
-  receivedAt        DateTime?            @map("received_at")
+  id                Int                 @id @default(autoincrement())
+  fromOutletId      Int                 @map("from_outlet_id")
+  toOutletId        Int                 @map("to_outlet_id")
+  status            StockTransferStatus @default(PENDING)
+  requestedByUserId Int                 @map("requested_by_user_id")
+  sentAt            DateTime?           @map("sent_at")
+  receivedAt        DateTime?           @map("received_at")
   notes             String?
-  createdAt         DateTime             @default(now()) @map("created_at")
-  updatedAt         DateTime             @updatedAt @map("updated_at")
+  createdAt         DateTime            @default(now()) @map("created_at")
+  updatedAt         DateTime            @updatedAt @map("updated_at")
 
-  fromOutlet   Outlet @relation("TransferFromOutlet", fields: [fromOutletId], references: [id])
-  toOutlet     Outlet @relation("TransferToOutlet", fields: [toOutletId], references: [id])
-  requestedBy  User   @relation(fields: [requestedByUserId], references: [id])
-  items        StockTransferItem[]
+  fromOutlet  Outlet              @relation("TransferFromOutlet", fields: [fromOutletId], references: [id])
+  toOutlet    Outlet              @relation("TransferToOutlet", fields: [toOutletId], references: [id])
+  requestedBy User                @relation(fields: [requestedByUserId], references: [id])
+  items       StockTransferItem[]
 
   @@map("stock_transfers")
 }
 
 model StockTransferItem {
-  id               String  @id @default(uuid()) @db.Uuid
-  stockTransferId  String  @map("stock_transfer_id") @db.Uuid
-  productId        String  @map("product_id") @db.Uuid
-  variantId        String? @map("variant_id") @db.Uuid
-  quantity         Int
+  id              Int  @id @default(autoincrement())
+  stockTransferId Int  @map("stock_transfer_id")
+  productId       Int  @map("product_id")
+  variantId       Int? @map("variant_id")
+  quantity        Int
 
   stockTransfer StockTransfer   @relation(fields: [stockTransferId], references: [id], onDelete: Cascade)
   product       Product         @relation(fields: [productId], references: [id])
@@ -760,12 +760,12 @@ model StockTransferItem {
 // ─────────────────────────────────────────────────────────────────────────
 
 model AuditLog {
-  id         String   @id @default(uuid()) @db.Uuid
-  outletId   String?  @map("outlet_id") @db.Uuid
-  userId     String   @map("user_id") @db.Uuid
+  id         Int      @id @default(autoincrement())
+  outletId   Int?     @map("outlet_id")
+  userId     Int      @map("user_id")
   action     String // e.g. "VOID_TRANSACTION", "REFUND_TRANSACTION", "STOCK_ADJUSTMENT", "LOGIN_SUCCESS", "LOGIN_FAILURE", "ACCOUNT_LOCKED"
   entityType String   @map("entity_type")
-  entityId   String   @map("entity_id") @db.Uuid
+  entityId   Int      @map("entity_id")
   details    Json?
   createdAt  DateTime @default(now()) @map("created_at")
 

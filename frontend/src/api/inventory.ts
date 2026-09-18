@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "./client";
 import { InventoryMovement, ProductStock } from "./types";
 
-export function useLowStock(outletId?: string) {
+export function useLowStock(outletId?: number) {
   return useQuery({
     queryKey: ["low-stock", outletId],
     queryFn: async () =>
@@ -17,7 +17,7 @@ export function useLowStock(outletId?: string) {
   });
 }
 
-export function useInventoryMovements(outletId?: string, productId?: string) {
+export function useInventoryMovements(outletId?: number, productId?: number) {
   return useQuery({
     queryKey: ["movements", outletId, productId],
     queryFn: async () =>
@@ -30,9 +30,9 @@ export function useAdjustStock() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (input: {
-      outletId: string;
-      productId: string;
-      variantId?: string;
+      outletId: number;
+      productId: number;
+      variantId?: number;
       type: "RESTOCK" | "WASTAGE" | "CORRECTION";
       quantityChange: number;
       reason?: string;

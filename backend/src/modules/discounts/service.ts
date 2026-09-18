@@ -25,13 +25,13 @@ export async function createDiscount(input: CreateDiscountInput) {
   return prisma.discount.create({ data: toPrismaData(input) });
 }
 
-export async function updateDiscount(id: string, input: UpdateDiscountInput) {
+export async function updateDiscount(id: number, input: UpdateDiscountInput) {
   const existing = await prisma.discount.findUnique({ where: { id } });
   if (!existing) throw ApiError.notFound("Discount not found");
   return prisma.discount.update({ where: { id }, data: toPrismaData(input) });
 }
 
-export async function deleteDiscount(id: string) {
+export async function deleteDiscount(id: number) {
   const existing = await prisma.discount.findUnique({ where: { id } });
   if (!existing) throw ApiError.notFound("Discount not found");
   await prisma.discount.update({ where: { id }, data: { isActive: false } });

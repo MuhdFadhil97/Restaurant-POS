@@ -13,7 +13,7 @@ export const list = asyncHandler(async (req: Request, res: Response) => {
 });
 
 export const getOne = asyncHandler(async (req: Request, res: Response) => {
-  res.json(await service.getTransfer(req.params.id));
+  res.json(await service.getTransfer(Number(req.params.id)));
 });
 
 export const create = asyncHandler(async (req: Request, res: Response) => {
@@ -22,15 +22,15 @@ export const create = asyncHandler(async (req: Request, res: Response) => {
 });
 
 export const cancel = asyncHandler(async (req: Request, res: Response) => {
-  res.json(await service.cancelTransfer(req.params.id));
+  res.json(await service.cancelTransfer(Number(req.params.id)));
 });
 
 export const send = asyncHandler(async (req: Request, res: Response) => {
   const user = requireUser(req);
-  res.json(await service.sendTransfer(req.params.id, user.userId));
+  res.json(await service.sendTransfer(Number(req.params.id), user.userId));
 });
 
 export const receive = asyncHandler(async (req: Request, res: Response) => {
   const user = requireUser(req);
-  res.json(await service.receiveTransfer(req.params.id, user.userId));
+  res.json(await service.receiveTransfer(Number(req.params.id), user.userId));
 });

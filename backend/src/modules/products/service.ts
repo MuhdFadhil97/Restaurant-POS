@@ -18,7 +18,7 @@ function stripCostPrice<T extends { costPrice: unknown }>(product: T, canSeeCost
   return rest;
 }
 
-export async function listProducts(outletId: string | undefined, canSeeCost: boolean) {
+export async function listProducts(outletId: number | undefined, canSeeCost: boolean) {
   const products = await prisma.product.findMany({
     where: { deletedAt: null },
     include: {
@@ -30,7 +30,7 @@ export async function listProducts(outletId: string | undefined, canSeeCost: boo
   return products.map((p) => stripCostPrice(p, canSeeCost));
 }
 
-export async function getProduct(id: string, outletId: string | undefined, canSeeCost: boolean) {
+export async function getProduct(id: number, outletId: number | undefined, canSeeCost: boolean) {
   const product = await prisma.product.findFirst({
     where: { id, deletedAt: null },
     include: {
@@ -53,7 +53,7 @@ export async function createProduct(input: CreateProductInput) {
   });
 }
 
-export async function updateProduct(id: string, input: UpdateProductInput) {
+export async function updateProduct(id: number, input: UpdateProductInput) {
   const existing = await prisma.product.findFirst({ where: { id, deletedAt: null } });
   if (!existing) throw ApiError.notFound("Product not found");
 
@@ -62,8 +62,6 @@ export async function updateProduct(id: string, input: UpdateProductInput) {
   return prisma.$transaction(async (tx) => {
     if (variants) {
       const incomingIds = variants.filter((v) => v.id).map((v) => v.id!);
-      // id is a Postgres uuid column, so a sentinel placeholder like "__none__" in a
-      // notIn filter fails to parse — branch instead of relying on a fake id.
       await tx.productVariant.deleteMany({
         where: incomingIds.length > 0 ? { productId: id, id: { notIn: incomingIds } } : { productId: id },
       });
@@ -119,9 +117,9 @@ export interface ImportPreview {
 }
 
 interface ImportCaches {
-  category: Map<string, string>;
-  taxRate: Map<string, string>;
-  station: Map<string, string>;
+  category: Map<string, number>;
+  taxRate: Map<string, number>;
+  station: Map<string, number>;
 }
 
 function newImportCaches(): ImportCaches {
@@ -130,9 +128,9 @@ function newImportCaches(): ImportCaches {
 
 async function resolveCategoryId(
   name: string,
-  cache: Map<string, string>,
+  cache: Map<string, number>,
   createIfMissing: boolean
-): Promise<{ id?: string; willCreate: boolean }> {
+): Promise<{ id?: number; willCreate: boolean }> {
   const key = name.trim().toLowerCase();
   const cached = cache.get(key);
   if (cached) return { id: cached, willCreate: false };
@@ -151,7 +149,7 @@ async function resolveCategoryId(
   return { id: undefined, willCreate: true };
 }
 
-async function resolveTaxRateId(name: string, outletId: string | undefined, cache: Map<string, string>): Promise<string> {
+async function resolveTaxRateId(name: string, outletId: number | undefined, cache: Map<string, number>): Promise<number> {
   if (!outletId) throw new Error("outletId is required to resolve a tax rate by name");
   const key = `${outletId}:${name.trim().toLowerCase()}`;
   const cached = cache.get(key);
@@ -164,7 +162,7 @@ async function resolveTaxRateId(name: string, outletId: string | undefined, cach
   return taxRate.id;
 }
 
-async function resolveStationId(name: string, outletId: string | undefined, cache: Map<string, string>): Promise<string> {
+async function resolveStationId(name: string, outletId: number | undefined, cache: Map<string, number>): Promise<number> {
   if (!outletId) throw new Error("outletId is required to resolve a kitchen station by name");
   const key = `${outletId}:${name.trim().toLowerCase()}`;
   const cached = cache.get(key);
@@ -179,7 +177,7 @@ async function resolveStationId(name: string, outletId: string | undefined, cach
 
 async function resolveImportRow(
   data: z.infer<typeof importProductRowSchema>,
-  outletId: string | undefined,
+  outletId: number | undefined,
   caches: ImportCaches,
   createCategory: boolean
 ) {
@@ -218,7 +216,7 @@ async function resolveImportRow(
 // writing anything, so the caller can show the user what will happen before they commit.
 export async function previewImportProducts(
   rawRows: Record<string, string>[],
-  outletId?: string
+  outletId?: number
 ): Promise<ImportPreview> {
   const preview: ImportPreview = { totalRows: rawRows.length, toCreate: 0, toUpdate: 0, toRestore: 0, invalid: 0, rows: [] };
   const caches = newImportCaches();
@@ -273,7 +271,7 @@ export async function previewImportProducts(
   return preview;
 }
 
-export async function importProducts(rawRows: Record<string, string>[], outletId?: string): Promise<ImportSummary> {
+export async function importProducts(rawRows: Record<string, string>[], outletId?: number): Promise<ImportSummary> {
   const summary: ImportSummary = { totalRows: rawRows.length, created: 0, updated: 0, failed: 0, errors: [] };
   const caches = newImportCaches();
 
@@ -364,7 +362,7 @@ function describeBulkAdjustRow(data: z.infer<typeof bulkAdjustProductRowSchema>)
 // SKU here is an error, never a row to create.
 export async function previewBulkAdjustProducts(
   rawRows: Record<string, string>[],
-  outletId?: string
+  outletId?: number
 ): Promise<BulkAdjustPreview> {
   const preview: BulkAdjustPreview = { totalRows: rawRows.length, toAdjust: 0, invalid: 0, rows: [] };
 
@@ -411,8 +409,8 @@ export async function previewBulkAdjustProducts(
 
 export async function bulkAdjustProducts(
   rawRows: Record<string, string>[],
-  outletId: string | undefined,
-  userId: string
+  outletId: number | undefined,
+  userId: number
 ): Promise<BulkAdjustSummary> {
   const summary: BulkAdjustSummary = { totalRows: rawRows.length, adjusted: 0, failed: 0, errors: [] };
 
@@ -495,7 +493,7 @@ export async function bulkAdjustProducts(
   return summary;
 }
 
-export async function deleteProduct(id: string) {
+export async function deleteProduct(id: number) {
   const existing = await prisma.product.findFirst({ where: { id, deletedAt: null } });
   if (!existing) throw ApiError.notFound("Product not found");
   await prisma.product.update({ where: { id }, data: { deletedAt: new Date(), isActive: false } });

@@ -3,11 +3,11 @@ import { asyncHandler } from "../../middleware/errorHandler";
 import * as service from "./service";
 
 export const list = asyncHandler(async (req: Request, res: Response) => {
-  res.json(await service.listShiftTemplates(req.query.outletId as string));
+  res.json(await service.listShiftTemplates(req.query.outletId as unknown as number));
 });
 
 export const getOne = asyncHandler(async (req: Request, res: Response) => {
-  res.json(await service.getShiftTemplate(req.params.id));
+  res.json(await service.getShiftTemplate(Number(req.params.id)));
 });
 
 export const create = asyncHandler(async (req: Request, res: Response) => {
@@ -15,10 +15,10 @@ export const create = asyncHandler(async (req: Request, res: Response) => {
 });
 
 export const update = asyncHandler(async (req: Request, res: Response) => {
-  res.json(await service.updateShiftTemplate(req.params.id, req.body));
+  res.json(await service.updateShiftTemplate(Number(req.params.id), req.body));
 });
 
 export const remove = asyncHandler(async (req: Request, res: Response) => {
-  await service.deleteShiftTemplate(req.params.id);
+  await service.deleteShiftTemplate(Number(req.params.id));
   res.status(204).send();
 });

@@ -2,8 +2,8 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
 interface OutletState {
-  activeOutletId: string | null;
-  setActiveOutlet: (outletId: string) => void;
+  activeOutletId: number | null;
+  setActiveOutlet: (outletId: number) => void;
 }
 
 export const useOutletStore = create<OutletState>()(

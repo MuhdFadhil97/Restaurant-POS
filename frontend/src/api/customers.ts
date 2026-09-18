@@ -9,7 +9,7 @@ export function useCustomers(search?: string) {
   });
 }
 
-export function useCustomerHistory(id?: string) {
+export function useCustomerHistory(id?: number) {
   return useQuery({
     queryKey: ["customer-history", id],
     queryFn: async () => (await apiClient.get<TransactionDto[]>(`/customers/${id}/history`)).data,
@@ -28,7 +28,7 @@ export function useCreateCustomer() {
 export function useUpdateCustomer() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, ...input }: Partial<Customer> & { id: string }) =>
+    mutationFn: async ({ id, ...input }: Partial<Customer> & { id: number }) =>
       (await apiClient.patch<Customer>(`/customers/${id}`, input)).data,
     onSuccess: () => qc.invalidateQueries({ queryKey: ["customers"] }),
   });
@@ -37,7 +37,7 @@ export function useUpdateCustomer() {
 export function useDeleteCustomer() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (id: string) => {
+    mutationFn: async (id: number) => {
       await apiClient.delete(`/customers/${id}`);
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["customers"] }),

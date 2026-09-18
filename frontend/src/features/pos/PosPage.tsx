@@ -42,9 +42,9 @@ export function PosPage() {
 
   const [localCart, setLocalCart] = useState<LocalCartItem[]>([]);
   const [selectedTable, setSelectedTable] = useState<TableDto | null>(null);
-  const [resumingId, setResumingId] = useState<string | null>(null);
-  const [customerId, setCustomerId] = useState("");
-  const [orderDiscountId, setOrderDiscountId] = useState("");
+  const [resumingId, setResumingId] = useState<number | null>(null);
+  const [customerId, setCustomerId] = useState<number | null>(null);
+  const [orderDiscountId, setOrderDiscountId] = useState<number | null>(null);
   const [showPayment, setShowPayment] = useState(false);
   const [showHeld, setShowHeld] = useState(false);
   const [paymentError, setPaymentError] = useState<string | null>(null);
@@ -113,8 +113,8 @@ export function PosPage() {
     setLocalCart([]);
     setResumingId(null);
     setSelectedTable(null);
-    setCustomerId("");
-    setOrderDiscountId("");
+    setCustomerId(null);
+    setOrderDiscountId(null);
   }
 
   function handleSelectProduct(product: Product, variant: ProductVariant | null) {
@@ -133,12 +133,12 @@ export function PosPage() {
     });
   }
 
-  function handleQtyChange(key: string, quantity: number) {
+  function handleQtyChange(key: string | number, quantity: number) {
     if (resumingTx) {
       if (quantity <= 0) {
-        removeItem.mutate({ transactionId: resumingTx.id, itemId: key });
+        removeItem.mutate({ transactionId: resumingTx.id, itemId: key as number });
       } else {
-        updateItem.mutate({ transactionId: resumingTx.id, itemId: key, quantity });
+        updateItem.mutate({ transactionId: resumingTx.id, itemId: key as number, quantity });
       }
       return;
     }
@@ -147,9 +147,9 @@ export function PosPage() {
     );
   }
 
-  function handleRemove(key: string) {
+  function handleRemove(key: string | number) {
     if (resumingTx) {
-      removeItem.mutate({ transactionId: resumingTx.id, itemId: key });
+      removeItem.mutate({ transactionId: resumingTx.id, itemId: key as number });
       return;
     }
     setLocalCart((prev) => prev.filter((i) => i.key !== key));
@@ -179,14 +179,14 @@ export function PosPage() {
     setResumingId(null);
   }
 
-  function handleCustomerChange(id: string) {
+  function handleCustomerChange(id: number | null) {
     setCustomerId(id);
-    if (resumingTx) updateTransaction.mutate({ id: resumingTx.id, input: { customerId: id || null } });
+    if (resumingTx) updateTransaction.mutate({ id: resumingTx.id, input: { customerId: id } });
   }
 
-  function handleOrderDiscountChange(id: string) {
+  function handleOrderDiscountChange(id: number | null) {
     setOrderDiscountId(id);
-    if (resumingTx) updateTransaction.mutate({ id: resumingTx.id, input: { orderDiscountId: id || null } });
+    if (resumingTx) updateTransaction.mutate({ id: resumingTx.id, input: { orderDiscountId: id } });
   }
 
   async function handleHold() {
@@ -216,8 +216,8 @@ export function PosPage() {
   async function handleResumeHeld(t: TransactionDto) {
     setResumingId(t.id);
     setSelectedTable(t.table ?? null);
-    setCustomerId(t.customerId ?? "");
-    setOrderDiscountId(t.orderDiscountId ?? "");
+    setCustomerId(t.customerId ?? null);
+    setOrderDiscountId(t.orderDiscountId ?? null);
     setLocalCart([]);
     setShowHeld(false);
   }

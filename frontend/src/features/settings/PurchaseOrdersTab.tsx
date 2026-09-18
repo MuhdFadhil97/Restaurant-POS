@@ -40,7 +40,7 @@ export function PurchaseOrdersTab() {
   const [showForm, setShowForm] = useState(false);
   const [supplierId, setSupplierId] = useState("");
   const [items, setItems] = useState<DraftItem[]>([{ productId: "", quantityOrdered: "", unitCost: "" }]);
-  const [receivingId, setReceivingId] = useState<string | null>(null);
+  const [receivingId, setReceivingId] = useState<number | null>(null);
 
   function addRow() {
     setItems((prev) => [...prev, { productId: "", quantityOrdered: "", unitCost: "" }]);
@@ -56,9 +56,9 @@ export function PurchaseOrdersTab() {
     if (!outletId || !supplierId) return;
     const validItems = items
       .filter((i) => i.productId && Number(i.quantityOrdered) > 0)
-      .map((i) => ({ productId: i.productId, quantityOrdered: Number(i.quantityOrdered), unitCost: Number(i.unitCost) || 0 }));
+      .map((i) => ({ productId: Number(i.productId), quantityOrdered: Number(i.quantityOrdered), unitCost: Number(i.unitCost) || 0 }));
     if (validItems.length === 0) return;
-    await createPO.mutateAsync({ outletId, supplierId, items: validItems });
+    await createPO.mutateAsync({ outletId, supplierId: Number(supplierId), items: validItems });
     setShowForm(false);
     setSupplierId("");
     setItems([{ productId: "", quantityOrdered: "", unitCost: "" }]);
@@ -194,7 +194,7 @@ function ReceiveModal({
 }: {
   order: PurchaseOrderDto | null;
   onClose: () => void;
-  onReceive: (input: { id: string; items: { itemId: string; quantityReceived: number }[] }) => Promise<unknown>;
+  onReceive: (input: { id: number; items: { itemId: number; quantityReceived: number }[] }) => Promise<unknown>;
   busy: boolean;
 }) {
   const [quantities, setQuantities] = useState<Record<string, string>>({});
@@ -205,7 +205,7 @@ function ReceiveModal({
     if (!order) return;
     const items = Object.entries(quantities)
       .filter(([, v]) => Number(v) > 0)
-      .map(([itemId, v]) => ({ itemId, quantityReceived: Number(v) }));
+      .map(([itemId, v]) => ({ itemId: Number(itemId), quantityReceived: Number(v) }));
     if (items.length === 0) return;
     await onReceive({ id: order.id, items });
     setQuantities({});

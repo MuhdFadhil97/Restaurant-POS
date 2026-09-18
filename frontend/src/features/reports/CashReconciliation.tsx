@@ -3,7 +3,7 @@ import { useCashSessions } from "@/api/cashSessions";
 import { Card, Spinner } from "@/components/ui";
 import { money } from "@/features/pos/cartMath";
 
-export function CashReconciliation({ outletId }: { outletId: string }) {
+export function CashReconciliation({ outletId }: { outletId: number }) {
   const { data: sessions, isLoading } = useCashSessions(outletId);
   const [showAll, setShowAll] = useState(false);
   const visible = showAll ? sessions : sessions?.slice(0, 5);

@@ -58,7 +58,7 @@ function TableToken({
   editable: boolean;
   selected: boolean;
   onClick?: () => void;
-  onDragEnd?: (id: string, posX: number, posY: number) => void;
+  onDragEnd?: (id: number, posX: number, posY: number) => void;
 }) {
   const [pos, setPos] = useState({ x: table.posX ?? 0, y: table.posY ?? 0 });
   const dragState = useRef<{ startX: number; startY: number; origX: number; origY: number; moved: boolean } | null>(
@@ -140,9 +140,9 @@ export function FloorPlanCanvas({
 }: {
   tables: TableDto[];
   editable: boolean;
-  selectedTableId?: string | null;
+  selectedTableId?: number | null;
   onSelect?: (table: TableDto | null) => void;
-  onDragEnd?: (id: string, posX: number, posY: number) => void;
+  onDragEnd?: (id: number, posX: number, posY: number) => void;
   className?: string;
 }) {
   return (

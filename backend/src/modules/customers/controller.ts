@@ -8,11 +8,11 @@ export const list = asyncHandler(async (req: Request, res: Response) => {
 });
 
 export const getOne = asyncHandler(async (req: Request, res: Response) => {
-  res.json(await service.getCustomer(req.params.id));
+  res.json(await service.getCustomer(Number(req.params.id)));
 });
 
 export const history = asyncHandler(async (req: Request, res: Response) => {
-  res.json(await service.getCustomerHistory(req.params.id));
+  res.json(await service.getCustomerHistory(Number(req.params.id)));
 });
 
 export const create = asyncHandler(async (req: Request, res: Response) => {
@@ -20,10 +20,10 @@ export const create = asyncHandler(async (req: Request, res: Response) => {
 });
 
 export const update = asyncHandler(async (req: Request, res: Response) => {
-  res.json(await service.updateCustomer(req.params.id, req.body));
+  res.json(await service.updateCustomer(Number(req.params.id), req.body));
 });
 
 export const remove = asyncHandler(async (req: Request, res: Response) => {
-  await service.deleteCustomer(req.params.id);
+  await service.deleteCustomer(Number(req.params.id));
   res.status(204).send();
 });

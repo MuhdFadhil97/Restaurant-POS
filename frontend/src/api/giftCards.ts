@@ -24,7 +24,7 @@ export function useCreateGiftCard() {
 export function useUpdateGiftCard() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, input }: { id: string; input: { isActive?: boolean; balance?: number } }) =>
+    mutationFn: async ({ id, input }: { id: number; input: { isActive?: boolean; balance?: number } }) =>
       (await apiClient.patch<GiftCard>(`/gift-cards/${id}`, input)).data,
     onSuccess: () => qc.invalidateQueries({ queryKey: ["gift-cards"] }),
   });

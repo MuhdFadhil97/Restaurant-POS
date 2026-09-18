@@ -24,7 +24,7 @@ export function ImportProductsModal({
   onClose,
 }: {
   open: boolean;
-  outletId?: string;
+  outletId?: number;
   onClose: () => void;
 }) {
   const previewImport = usePreviewImportProducts();

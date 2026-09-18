@@ -23,13 +23,13 @@ export async function listTransfers(query: ListQuery) {
   });
 }
 
-export async function getTransfer(id: string) {
+export async function getTransfer(id: number) {
   const transfer = await prisma.stockTransfer.findUnique({ where: { id }, include: detailInclude });
   if (!transfer) throw ApiError.notFound("Stock transfer not found");
   return transfer;
 }
 
-export async function createTransfer(requestedByUserId: string, input: CreateTransferInput) {
+export async function createTransfer(requestedByUserId: number, input: CreateTransferInput) {
   return prisma.stockTransfer.create({
     data: {
       fromOutletId: input.fromOutletId,
@@ -42,7 +42,7 @@ export async function createTransfer(requestedByUserId: string, input: CreateTra
   });
 }
 
-export async function cancelTransfer(id: string) {
+export async function cancelTransfer(id: number) {
   const transfer = await prisma.stockTransfer.findUnique({ where: { id } });
   if (!transfer) throw ApiError.notFound("Stock transfer not found");
   if (transfer.status !== "PENDING") throw ApiError.badRequest("Only pending transfers can be cancelled");
@@ -50,7 +50,7 @@ export async function cancelTransfer(id: string) {
 }
 
 // Decrements stock at the source outlet and marks the transfer in transit.
-export async function sendTransfer(id: string, userId: string) {
+export async function sendTransfer(id: number, userId: number) {
   return prisma.$transaction(async (tx) => {
     const transfer = await tx.stockTransfer.findUnique({ where: { id }, include: { items: true } });
     if (!transfer) throw ApiError.notFound("Stock transfer not found");
@@ -101,7 +101,7 @@ export async function sendTransfer(id: string, userId: string) {
 }
 
 // Increments stock at the destination outlet and marks the transfer received.
-export async function receiveTransfer(id: string, userId: string) {
+export async function receiveTransfer(id: number, userId: number) {
   return prisma.$transaction(async (tx) => {
     const transfer = await tx.stockTransfer.findUnique({ where: { id }, include: { items: true } });
     if (!transfer) throw ApiError.notFound("Stock transfer not found");

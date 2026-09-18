@@ -89,7 +89,7 @@ function UserFormModal({
   open: boolean;
   onClose: () => void;
   onSubmit: (input: Record<string, unknown>) => Promise<void>;
-  outlets: { id: string; name: string }[];
+  outlets: { id: number; name: string }[];
   initial?: UserDto;
   title: string;
 }) {
@@ -98,7 +98,7 @@ function UserFormModal({
   const [username, setUsername] = useState(initial?.username ?? "");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState<Role>(initial?.role ?? "CASHIER");
-  const [outletIds, setOutletIds] = useState<string[]>(initial?.outletIds ?? []);
+  const [outletIds, setOutletIds] = useState<number[]>(initial?.outletIds ?? []);
   const [isActive, setIsActive] = useState(initial?.isActive ?? true);
   const [submitting, setSubmitting] = useState(false);
 
@@ -119,7 +119,7 @@ function UserFormModal({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, initial]);
 
-  function toggleOutlet(id: string) {
+  function toggleOutlet(id: number) {
     setOutletIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
   }
 

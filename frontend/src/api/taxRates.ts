@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "./client";
 import { TaxRate } from "./types";
 
-export function useTaxRates(outletId?: string) {
+export function useTaxRates(outletId?: number) {
   return useQuery({
     queryKey: ["tax-rates", outletId],
     queryFn: async () => (await apiClient.get<TaxRate[]>("/tax-rates", { params: { outletId } })).data,

@@ -28,12 +28,12 @@ const dualStorage = {
 export type Role = "ADMIN" | "MANAGER" | "CASHIER" | "KITCHEN";
 
 export interface AuthUser {
-  id: string;
+  id: number;
   name: string;
   email: string;
   username: string;
   role: Role;
-  outletIds: string[];
+  outletIds: number[];
 }
 
 interface AuthState {

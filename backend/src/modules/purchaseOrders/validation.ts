@@ -1,15 +1,15 @@
 import { z } from "zod";
 
 const itemInput = z.object({
-  productId: z.string().uuid(),
-  variantId: z.string().uuid().optional(),
+  productId: z.coerce.number().int(),
+  variantId: z.coerce.number().int().optional(),
   quantityOrdered: z.number().int().positive(),
   unitCost: z.number().nonnegative(),
 });
 
 export const createPurchaseOrderSchema = z.object({
-  outletId: z.string().uuid(),
-  supplierId: z.string().uuid(),
+  outletId: z.coerce.number().int(),
+  supplierId: z.coerce.number().int(),
   expectedAt: z.string().datetime().optional(),
   notes: z.string().optional(),
   items: z.array(itemInput).min(1, "At least one item is required"),
@@ -19,7 +19,7 @@ export const receiveSchema = z.object({
   items: z
     .array(
       z.object({
-        itemId: z.string().uuid(),
+        itemId: z.coerce.number().int(),
         quantityReceived: z.number().int().nonnegative(),
       })
     )
@@ -27,7 +27,7 @@ export const receiveSchema = z.object({
 });
 
 export const listQuerySchema = z.object({
-  outletId: z.string().uuid().optional(),
+  outletId: z.coerce.number().int().optional(),
   status: z.enum(["DRAFT", "ORDERED", "PARTIALLY_RECEIVED", "RECEIVED", "CANCELLED"]).optional(),
 });
 

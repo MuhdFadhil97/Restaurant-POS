@@ -10,7 +10,7 @@ export function CategoriesTab() {
   const deleteCategory = useDeleteCategory();
 
   const [name, setName] = useState("");
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<number | null>(null);
   const [editingName, setEditingName] = useState("");
 
   async function handleSubmit(e: FormEvent) {
@@ -25,13 +25,13 @@ export function CategoriesTab() {
     setEditingName(c.name);
   }
 
-  async function saveEdit(id: string) {
+  async function saveEdit(id: number) {
     if (!editingName.trim()) return;
     await updateCategory.mutateAsync({ id, name: editingName.trim() });
     setEditingId(null);
   }
 
-  async function handleDelete(id: string) {
+  async function handleDelete(id: number) {
     await deleteCategory.mutateAsync(id);
   }
 

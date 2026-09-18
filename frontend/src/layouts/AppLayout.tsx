@@ -108,7 +108,7 @@ export function AppLayout() {
           <div className="text-sm text-gray-500">Outlet</div>
           <div className="w-64">
             {outlets && outlets.length > 0 ? (
-              <Select value={activeOutletId ?? ""} onChange={(e) => setActiveOutlet(e.target.value)}>
+              <Select value={activeOutletId ?? ""} onChange={(e) => setActiveOutlet(Number(e.target.value))}>
                 {outlets.map((o) => (
                   <option key={o.id} value={o.id}>
                     {o.name}

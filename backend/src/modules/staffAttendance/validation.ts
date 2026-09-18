@@ -3,8 +3,8 @@ import { z } from "zod";
 const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
 
 export const clockInSchema = z.object({
-  outletId: z.string().uuid(),
-  scheduleId: z.string().uuid().optional(),
+  outletId: z.coerce.number().int(),
+  scheduleId: z.coerce.number().int().optional(),
 });
 
 export const listMyAttendanceQuerySchema = z.object({
@@ -13,7 +13,7 @@ export const listMyAttendanceQuerySchema = z.object({
 });
 
 export const listAttendanceQuerySchema = z.object({
-  outletId: z.string().uuid(),
+  outletId: z.coerce.number().int(),
   from: z.string().regex(DATE_ONLY),
   to: z.string().regex(DATE_ONLY),
 });

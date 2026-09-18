@@ -10,7 +10,7 @@ export const list = asyncHandler(async (req: Request, res: Response) => {
 });
 
 export const getOne = asyncHandler(async (req: Request, res: Response) => {
-  const outlet = await service.getOutlet(req.params.id);
+  const outlet = await service.getOutlet(Number(req.params.id));
   res.json(outlet);
 });
 
@@ -20,11 +20,11 @@ export const create = asyncHandler(async (req: Request, res: Response) => {
 });
 
 export const update = asyncHandler(async (req: Request, res: Response) => {
-  const outlet = await service.updateOutlet(req.params.id, req.body);
+  const outlet = await service.updateOutlet(Number(req.params.id), req.body);
   res.json(outlet);
 });
 
 export const remove = asyncHandler(async (req: Request, res: Response) => {
-  await service.deleteOutlet(req.params.id);
+  await service.deleteOutlet(Number(req.params.id));
   res.status(204).send();
 });

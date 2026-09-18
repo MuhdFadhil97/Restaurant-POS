@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const createStationSchema = z.object({
-  outletId: z.string().uuid(),
+  outletId: z.coerce.number().int(),
   name: z.string().min(1),
 });
 

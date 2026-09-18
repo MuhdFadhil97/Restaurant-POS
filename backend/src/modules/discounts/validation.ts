@@ -12,8 +12,8 @@ export const createDiscountSchema = z.object({
   startDate: z.string().datetime().optional(),
   endDate: z.string().datetime().optional(),
   usageLimit: z.number().int().positive().optional(),
-  productId: z.string().uuid().optional(),
-  categoryId: z.string().uuid().optional(),
+  productId: z.coerce.number().int().optional(),
+  categoryId: z.coerce.number().int().optional(),
 });
 
 export const updateDiscountSchema = createDiscountSchema.partial();

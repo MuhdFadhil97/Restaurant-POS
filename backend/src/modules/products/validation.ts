@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 const variantInput = z.object({
-  id: z.string().uuid().optional(),
+  id: z.coerce.number().int().optional(),
   name: z.string().min(1),
   value: z.string().min(1),
   skuSuffix: z.string().optional(),
@@ -11,11 +11,11 @@ const variantInput = z.object({
 export const createProductSchema = z.object({
   sku: z.string().min(1),
   name: z.string().min(1),
-  categoryId: z.string().uuid().optional(),
+  categoryId: z.coerce.number().int().optional(),
   unitPrice: z.number().nonnegative(),
   costPrice: z.number().nonnegative(),
-  taxRateId: z.string().uuid().optional(),
-  stationId: z.string().uuid().optional(),
+  taxRateId: z.coerce.number().int().optional(),
+  stationId: z.coerce.number().int().optional(),
   unitOfMeasure: z.string().min(1),
   imageUrl: z.string().url().optional(),
   lowStockThreshold: z.number().int().nonnegative().default(0),

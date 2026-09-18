@@ -36,7 +36,7 @@ const detailInclude = {
 // Recomputes and persists every item's price breakdown plus the parent
 // transaction's totals. Called after any change to items or the order-level
 // discount so stored totals never drift from the source data.
-async function recalculate(tx: Tx, transactionId: string) {
+async function recalculate(tx: Tx, transactionId: number) {
   const transaction = await tx.transaction.findUniqueOrThrow({
     where: { id: transactionId },
     include: {
@@ -83,7 +83,7 @@ async function recalculate(tx: Tx, transactionId: string) {
   });
 }
 
-async function ensureMutable(tx: Tx, transactionId: string) {
+async function ensureMutable(tx: Tx, transactionId: number) {
   const transaction = await tx.transaction.findUnique({ where: { id: transactionId } });
   if (!transaction) throw ApiError.notFound("Transaction not found");
   if (transaction.status !== "HELD" && transaction.status !== "OPEN") {
@@ -92,7 +92,7 @@ async function ensureMutable(tx: Tx, transactionId: string) {
   return transaction;
 }
 
-export async function createDraft(cashierId: string, input: CreateDraftInput) {
+export async function createDraft(cashierId: number, input: CreateDraftInput) {
   return prisma.$transaction(async (tx) => {
     const status: TransactionStatus = input.tableId ? "OPEN" : "HELD";
 
@@ -131,7 +131,7 @@ export async function createDraft(cashierId: string, input: CreateDraftInput) {
   });
 }
 
-export async function addItem(transactionId: string, input: AddItemInput) {
+export async function addItem(transactionId: number, input: AddItemInput) {
   return prisma.$transaction(async (tx) => {
     await ensureMutable(tx, transactionId);
     await tx.transactionItem.create({
@@ -149,7 +149,7 @@ export async function addItem(transactionId: string, input: AddItemInput) {
   });
 }
 
-export async function updateItem(transactionId: string, itemId: string, input: UpdateItemInput) {
+export async function updateItem(transactionId: number, itemId: number, input: UpdateItemInput) {
   return prisma.$transaction(async (tx) => {
     await ensureMutable(tx, transactionId);
     const item = await tx.transactionItem.findFirst({ where: { id: itemId, transactionId } });
@@ -166,7 +166,7 @@ export async function updateItem(transactionId: string, itemId: string, input: U
   });
 }
 
-export async function removeItem(transactionId: string, itemId: string) {
+export async function removeItem(transactionId: number, itemId: number) {
   return prisma.$transaction(async (tx) => {
     await ensureMutable(tx, transactionId);
     const item = await tx.transactionItem.findFirst({ where: { id: itemId, transactionId } });
@@ -177,7 +177,7 @@ export async function removeItem(transactionId: string, itemId: string) {
   });
 }
 
-export async function updateTransaction(transactionId: string, input: UpdateTransactionInput) {
+export async function updateTransaction(transactionId: number, input: UpdateTransactionInput) {
   return prisma.$transaction(async (tx) => {
     await ensureMutable(tx, transactionId);
     await tx.transaction.update({
@@ -197,9 +197,9 @@ export async function updateTransaction(transactionId: string, input: UpdateTran
 // Throws (aborting the surrounding DB transaction) if any item is short.
 async function decrementStockForItems(
   tx: Tx,
-  outletId: string,
-  items: { productId: string; variantId: string | null; quantity: number }[],
-  performedByUserId: string
+  outletId: number,
+  items: { productId: number; variantId: number | null; quantity: number }[],
+  performedByUserId: number
 ) {
   for (const item of items) {
     const stock = await tx.productStock.findFirst({
@@ -243,7 +243,7 @@ function assertPaymentsCoverTotal(payments: { amount: number }[], total: number)
 // the right product — then bumps each discount's usage count. Runs at
 // checkout/finalize time (not on every draft edit) so usage counts only
 // reflect completed sales, not abandoned carts.
-async function validateAndConsumeDiscounts(tx: Tx, transactionId: string) {
+async function validateAndConsumeDiscounts(tx: Tx, transactionId: number) {
   const transaction = await tx.transaction.findUniqueOrThrow({
     where: { id: transactionId },
     include: {
@@ -253,7 +253,7 @@ async function validateAndConsumeDiscounts(tx: Tx, transactionId: string) {
   });
 
   const now = new Date();
-  const discounts = new Map<string, { name: string; minSpend: unknown; startDate: Date | null; endDate: Date | null; usageLimit: number | null; usageCount: number; isActive: boolean }>();
+  const discounts = new Map<number, { name: string; minSpend: unknown; startDate: Date | null; endDate: Date | null; usageLimit: number | null; usageCount: number; isActive: boolean }>();
   if (transaction.orderDiscount) discounts.set(transaction.orderDiscount.id, transaction.orderDiscount);
   for (const item of transaction.items) {
     if (item.discount) discounts.set(item.discount.id, item.discount);
@@ -309,15 +309,15 @@ interface PaymentInput {
 // Returns the total points redeemed, so the caller can record it.
 async function processPayments(
   tx: Tx,
-  transactionId: string,
-  outletId: string,
-  customerId: string | null,
+  transactionId: number,
+  outletId: number,
+  customerId: number | null,
   payments: PaymentInput[]
 ): Promise<number> {
   let pointsRedeemed = 0;
 
   for (const p of payments) {
-    let giftCardId: string | undefined;
+    let giftCardId: number | undefined;
 
     if (p.method === "GIFT_CARD") {
       if (!p.reference) {
@@ -364,8 +364,8 @@ async function processPayments(
 // using the outlet's configured earn rate. No-op without a customer.
 async function accrueLoyaltyPoints(
   tx: Tx,
-  outletId: string,
-  customerId: string | null,
+  outletId: number,
+  customerId: number | null,
   total: number
 ): Promise<number> {
   if (!customerId) return 0;
@@ -396,7 +396,7 @@ async function nextReceiptNumber(tx: Tx): Promise<string> {
 
 // One-shot path used by the fast retail checkout screen: create + pay in a
 // single atomic operation.
-export async function checkout(cashierId: string, input: CheckoutInput) {
+export async function checkout(cashierId: number, input: CheckoutInput) {
   if (input.items.length === 0) {
     throw ApiError.badRequest("Cannot checkout an empty cart");
   }
@@ -458,7 +458,7 @@ export async function checkout(cashierId: string, input: CheckoutInput) {
 }
 
 // Finalizes an existing HELD/OPEN transaction (resume-and-pay path).
-export async function finalize(transactionId: string, cashierId: string, input: FinalizeInput) {
+export async function finalize(transactionId: number, cashierId: number, input: FinalizeInput) {
   return prisma.$transaction(async (tx) => {
     const transaction = await ensureMutable(tx, transactionId);
     const withItems = await tx.transaction.findUniqueOrThrow({
@@ -503,10 +503,10 @@ export async function finalize(transactionId: string, cashierId: string, input: 
 // as approverId + approverPassword. Managers/admins may self-approve.
 async function resolveApproval(
   tx: Tx,
-  actorUserId: string,
+  actorUserId: number,
   actorRole: string,
   input: VoidInput
-): Promise<string> {
+): Promise<number> {
   if (actorRole === "ADMIN" || actorRole === "MANAGER") {
     return actorUserId;
   }
@@ -530,9 +530,9 @@ async function resolveApproval(
 
 async function restockItems(
   tx: Tx,
-  outletId: string,
-  items: { productId: string; variantId: string | null; quantity: number }[],
-  performedByUserId: string
+  outletId: number,
+  items: { productId: number; variantId: number | null; quantity: number }[],
+  performedByUserId: number
 ) {
   for (const item of items) {
     const existingStock = await tx.productStock.findFirst({
@@ -562,8 +562,8 @@ async function restockItems(
 }
 
 export async function voidTransaction(
-  transactionId: string,
-  actorUserId: string,
+  transactionId: number,
+  actorUserId: number,
   actorRole: string,
   input: VoidInput
 ) {
@@ -617,8 +617,8 @@ export async function voidTransaction(
 }
 
 export async function refundTransaction(
-  transactionId: string,
-  actorUserId: string,
+  transactionId: number,
+  actorUserId: number,
   actorRole: string,
   input: VoidInput
 ) {
@@ -666,7 +666,7 @@ export async function refundTransaction(
   });
 }
 
-export async function getTransaction(id: string) {
+export async function getTransaction(id: number) {
   const transaction = await prisma.transaction.findUnique({ where: { id }, include: detailInclude });
   if (!transaction) throw ApiError.notFound("Transaction not found");
   return transaction;

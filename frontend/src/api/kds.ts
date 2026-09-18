@@ -3,10 +3,10 @@ import { apiClient } from "./client";
 import { PrepStatus, TableDto, TransactionItemDto } from "./types";
 
 export interface KdsQueueItem extends TransactionItemDto {
-  transaction: { id: string; table: TableDto | null };
+  transaction: { id: number; table: TableDto | null };
 }
 
-export function useKdsQueue(outletId?: string, stationId?: string) {
+export function useKdsQueue(outletId?: number, stationId?: number) {
   return useQuery({
     queryKey: ["kds-queue", outletId, stationId],
     queryFn: async () =>
@@ -19,7 +19,7 @@ export function useKdsQueue(outletId?: string, stationId?: string) {
 export function useUpdatePrepStatus() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ itemId, prepStatus }: { itemId: string; prepStatus: PrepStatus }) =>
+    mutationFn: async ({ itemId, prepStatus }: { itemId: number; prepStatus: PrepStatus }) =>
       (await apiClient.patch<TransactionItemDto>(`/kds/items/${itemId}`, { prepStatus })).data,
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["kds-queue"] });

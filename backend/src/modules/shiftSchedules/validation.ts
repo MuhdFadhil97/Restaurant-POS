@@ -3,12 +3,12 @@ import { z } from "zod";
 const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
 
 export const listShiftSchedulesQuerySchema = z.object({
-  outletId: z.string().uuid(),
+  outletId: z.coerce.number().int(),
   month: z.string().regex(/^\d{4}-\d{2}$/, "month must be YYYY-MM"),
 });
 
 export const staffQuerySchema = z.object({
-  outletId: z.string().uuid(),
+  outletId: z.coerce.number().int(),
 });
 
 export const listMyShiftSchedulesQuerySchema = z.object({
@@ -17,15 +17,15 @@ export const listMyShiftSchedulesQuerySchema = z.object({
 });
 
 export const createShiftScheduleSchema = z.object({
-  outletId: z.string().uuid(),
-  userId: z.string().uuid(),
-  shiftTemplateId: z.string().uuid(),
+  outletId: z.coerce.number().int(),
+  userId: z.coerce.number().int(),
+  shiftTemplateId: z.coerce.number().int(),
   date: z.string().regex(DATE_ONLY, "date must be YYYY-MM-DD"),
   notes: z.string().optional(),
 });
 
 export const updateShiftScheduleSchema = z.object({
-  shiftTemplateId: z.string().uuid().optional(),
+  shiftTemplateId: z.coerce.number().int().optional(),
   notes: z.string().optional(),
 });
 

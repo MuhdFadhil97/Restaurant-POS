@@ -7,5 +7,5 @@ export const queue = asyncHandler(async (req: Request, res: Response) => {
 });
 
 export const updateStatus = asyncHandler(async (req: Request, res: Response) => {
-  res.json(await service.updatePrepStatus(req.params.itemId, req.body.prepStatus));
+  res.json(await service.updatePrepStatus(Number(req.params.itemId), req.body.prepStatus));
 });

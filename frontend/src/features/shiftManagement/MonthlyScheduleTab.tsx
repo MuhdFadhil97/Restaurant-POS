@@ -32,10 +32,8 @@ const CHIP_COLORS = [
   "bg-pink-100 text-pink-700",
 ];
 
-function colorForTemplate(templateId: string): string {
-  let hash = 0;
-  for (let i = 0; i < templateId.length; i++) hash = (hash * 31 + templateId.charCodeAt(i)) >>> 0;
-  return CHIP_COLORS[hash % CHIP_COLORS.length];
+function colorForTemplate(templateId: number): string {
+  return CHIP_COLORS[templateId % CHIP_COLORS.length];
 }
 
 export function MonthlyScheduleTab() {
@@ -47,7 +45,7 @@ export function MonthlyScheduleTab() {
   const createSchedule = useCreateShiftSchedule();
   const deleteSchedule = useDeleteShiftSchedule();
 
-  const [assignFor, setAssignFor] = useState<{ userId: string; date: string } | null>(null);
+  const [assignFor, setAssignFor] = useState<{ userId: number; date: string } | null>(null);
   const [selectedTemplateId, setSelectedTemplateId] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [warning, setWarning] = useState<string | null>(null);
@@ -73,9 +71,9 @@ export function MonthlyScheduleTab() {
     setMonthKey(formatMonth(next.getFullYear(), next.getMonth() + 1));
   }
 
-  function openAssign(userId: string, day: number) {
+  function openAssign(userId: number, day: number) {
     setAssignFor({ userId, date: `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}` });
-    setSelectedTemplateId(templates?.[0]?.id ?? "");
+    setSelectedTemplateId(templates?.[0] ? String(templates[0].id) : "");
     setError(null);
     setWarning(null);
   }
@@ -87,7 +85,7 @@ export function MonthlyScheduleTab() {
       const result = await createSchedule.mutateAsync({
         outletId,
         userId: assignFor.userId,
-        shiftTemplateId: selectedTemplateId,
+        shiftTemplateId: Number(selectedTemplateId),
         date: assignFor.date,
       });
       if (result.overlapWarning) {

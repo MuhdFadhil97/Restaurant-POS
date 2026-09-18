@@ -20,13 +20,13 @@ export async function listCustomers(search?: string) {
   });
 }
 
-export async function getCustomer(id: string) {
+export async function getCustomer(id: number) {
   const customer = await prisma.customer.findFirst({ where: { id, deletedAt: null } });
   if (!customer) throw ApiError.notFound("Customer not found");
   return customer;
 }
 
-export async function getCustomerHistory(id: string) {
+export async function getCustomerHistory(id: number) {
   await getCustomer(id);
   return prisma.transaction.findMany({
     where: { customerId: id, status: { in: ["COMPLETED", "REFUNDED"] } },
@@ -39,12 +39,12 @@ export async function createCustomer(input: CreateCustomerInput) {
   return prisma.customer.create({ data: input });
 }
 
-export async function updateCustomer(id: string, input: UpdateCustomerInput) {
+export async function updateCustomer(id: number, input: UpdateCustomerInput) {
   await getCustomer(id);
   return prisma.customer.update({ where: { id }, data: input });
 }
 
-export async function deleteCustomer(id: string) {
+export async function deleteCustomer(id: number) {
   await getCustomer(id);
   await prisma.customer.update({ where: { id }, data: { deletedAt: new Date() } });
 }

@@ -5,11 +5,11 @@ type Tx = PrismaClient | Prisma.TransactionClient;
 export async function recordAudit(
   tx: Tx,
   params: {
-    userId: string;
+    userId: number;
     action: string;
     entityType: string;
-    entityId: string;
-    outletId?: string | null;
+    entityId: number;
+    outletId?: number | null;
     details?: unknown;
   }
 ) {

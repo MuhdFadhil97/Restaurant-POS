@@ -13,7 +13,7 @@ export function VoidRefundModal({
   open: boolean;
   onClose: () => void;
   mode: "void" | "refund";
-  onConfirm: (input: { reason: string; approverId?: string; approverPassword?: string }) => void;
+  onConfirm: (input: { reason: string; approverId?: number; approverPassword?: string }) => void;
   busy: boolean;
   error: string | null;
 }) {
@@ -53,7 +53,7 @@ export function VoidRefundModal({
           variant="danger"
           className="w-full"
           disabled={!reason || busy}
-          onClick={() => onConfirm({ reason, approverId: approverId || undefined, approverPassword: approverPassword || undefined })}
+          onClick={() => onConfirm({ reason, approverId: approverId ? Number(approverId) : undefined, approverPassword: approverPassword || undefined })}
         >
           {busy ? "Processing..." : mode === "void" ? "Void Transaction" : "Refund Transaction"}
         </Button>

@@ -3,9 +3,9 @@ import { env } from "../config/env";
 import { Role } from "@prisma/client";
 
 export interface JwtPayload {
-  userId: string;
+  userId: number;
   role: Role;
-  outletIds: string[];
+  outletIds: number[];
 }
 
 export function signToken(payload: JwtPayload): string {

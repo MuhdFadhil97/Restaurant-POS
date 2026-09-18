@@ -3,7 +3,7 @@ import { prisma } from "../../lib/prisma";
 import { ApiError } from "../../lib/apiError";
 import { CreateTableInput, SaveLayoutInput, UpdateTableInput } from "./validation";
 
-export async function listTables(outletId: string) {
+export async function listTables(outletId: number) {
   return prisma.table.findMany({
     where: { outletId, deletedAt: null },
     orderBy: { name: "asc" },
@@ -14,7 +14,7 @@ export async function createTable(input: CreateTableInput) {
   return prisma.table.create({ data: input });
 }
 
-export async function updateTable(id: string, input: UpdateTableInput) {
+export async function updateTable(id: number, input: UpdateTableInput) {
   const existing = await prisma.table.findFirst({ where: { id, deletedAt: null } });
   if (!existing) throw ApiError.notFound("Table not found");
 
@@ -27,7 +27,7 @@ export async function updateTable(id: string, input: UpdateTableInput) {
   return prisma.table.update({ where: { id }, data });
 }
 
-export async function saveLayout(outletId: string, tables: SaveLayoutInput["tables"]) {
+export async function saveLayout(outletId: number, tables: SaveLayoutInput["tables"]) {
   const ids = tables.map((t) => t.id);
   const owned = await prisma.table.findMany({
     where: { id: { in: ids }, outletId, deletedAt: null },
@@ -47,7 +47,7 @@ export async function saveLayout(outletId: string, tables: SaveLayoutInput["tabl
   );
 }
 
-export async function deleteTable(id: string) {
+export async function deleteTable(id: number) {
   const existing = await prisma.table.findFirst({ where: { id, deletedAt: null } });
   if (!existing) throw ApiError.notFound("Table not found");
   await prisma.table.update({ where: { id }, data: { deletedAt: new Date() } });

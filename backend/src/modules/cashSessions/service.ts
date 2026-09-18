@@ -3,7 +3,7 @@ import { ApiError } from "../../lib/apiError";
 import { round2 } from "../transactions/calculations";
 import { CloseSessionInput, OpenSessionInput } from "./validation";
 
-export async function openSession(userId: string, input: OpenSessionInput) {
+export async function openSession(userId: number, input: OpenSessionInput) {
   const existingOpen = await prisma.cashSession.findFirst({
     where: { userId, outletId: input.outletId, status: "OPEN" },
   });
@@ -16,7 +16,7 @@ export async function openSession(userId: string, input: OpenSessionInput) {
   });
 }
 
-export async function closeSession(id: string, input: CloseSessionInput) {
+export async function closeSession(id: number, input: CloseSessionInput) {
   const session = await prisma.cashSession.findUnique({ where: { id } });
   if (!session) throw ApiError.notFound("Cash session not found");
   if (session.status === "CLOSED") throw ApiError.badRequest("Session already closed");
@@ -48,11 +48,11 @@ export async function closeSession(id: string, input: CloseSessionInput) {
   });
 }
 
-export async function getCurrentSession(userId: string, outletId: string) {
+export async function getCurrentSession(userId: number, outletId: number) {
   return prisma.cashSession.findFirst({ where: { userId, outletId, status: "OPEN" } });
 }
 
-export async function listSessions(outletId: string) {
+export async function listSessions(outletId: number) {
   return prisma.cashSession.findMany({
     where: { outletId },
     include: { user: { select: { id: true, name: true } } },

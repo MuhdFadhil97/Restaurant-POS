@@ -28,7 +28,7 @@ export async function createGiftCard(input: CreateGiftCardInput) {
   });
 }
 
-export async function adjustGiftCard(id: string, input: AdjustGiftCardInput) {
+export async function adjustGiftCard(id: number, input: AdjustGiftCardInput) {
   const existing = await prisma.giftCard.findUnique({ where: { id } });
   if (!existing) throw ApiError.notFound("Gift card not found");
   return prisma.giftCard.update({ where: { id }, data: input });

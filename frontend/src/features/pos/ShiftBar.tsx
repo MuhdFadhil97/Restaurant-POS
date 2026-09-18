@@ -4,7 +4,7 @@ import { getErrorMessage } from "@/api/client";
 import { Button, ErrorMessage, Input, Modal } from "@/components/ui";
 import { money } from "./cartMath";
 
-export function ShiftBar({ outletId }: { outletId: string }) {
+export function ShiftBar({ outletId }: { outletId: number }) {
   const { data: session } = useCurrentCashSession(outletId);
   const openSession = useOpenCashSession();
   const closeSession = useCloseCashSession();

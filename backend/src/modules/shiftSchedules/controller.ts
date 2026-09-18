@@ -3,11 +3,11 @@ import { asyncHandler } from "../../middleware/errorHandler";
 import * as service from "./service";
 
 export const listStaff = asyncHandler(async (req: Request, res: Response) => {
-  res.json(await service.listStaffForOutlet(req.query.outletId as string));
+  res.json(await service.listStaffForOutlet(Number(req.query.outletId)));
 });
 
 export const listForMonth = asyncHandler(async (req: Request, res: Response) => {
-  const { outletId, month } = req.query as { outletId: string; month: string };
+  const { outletId, month } = req.query as unknown as { outletId: number; month: string };
   res.json(await service.listShiftSchedulesForMonth(outletId, month));
 });
 
@@ -21,10 +21,10 @@ export const create = asyncHandler(async (req: Request, res: Response) => {
 });
 
 export const update = asyncHandler(async (req: Request, res: Response) => {
-  res.json(await service.updateShiftSchedule(req.params.id, req.body));
+  res.json(await service.updateShiftSchedule(Number(req.params.id), req.body));
 });
 
 export const remove = asyncHandler(async (req: Request, res: Response) => {
-  await service.deleteShiftSchedule(req.params.id);
+  await service.deleteShiftSchedule(Number(req.params.id));
   res.status(204).send();
 });

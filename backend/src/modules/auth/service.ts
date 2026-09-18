@@ -87,7 +87,7 @@ export async function login(input: LoginInput) {
   };
 }
 
-export async function getCurrentUser(userId: string) {
+export async function getCurrentUser(userId: number) {
   const user = await prisma.user.findUniqueOrThrow({
     where: { id: userId },
     include: { outletAccess: { select: { outletId: true } } },

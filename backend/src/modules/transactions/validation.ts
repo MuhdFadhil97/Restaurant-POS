@@ -1,10 +1,10 @@
 import { z } from "zod";
 
 const itemInput = z.object({
-  productId: z.string().uuid(),
-  variantId: z.string().uuid().optional(),
+  productId: z.coerce.number().int(),
+  variantId: z.coerce.number().int().optional(),
   quantity: z.number().int().positive(),
-  discountId: z.string().uuid().optional(),
+  discountId: z.coerce.number().int().optional(),
 });
 
 const paymentInput = z.object({
@@ -16,10 +16,10 @@ const paymentInput = z.object({
 });
 
 export const createDraftSchema = z.object({
-  outletId: z.string().uuid(),
-  tableId: z.string().uuid().optional(),
-  customerId: z.string().uuid().optional(),
-  orderDiscountId: z.string().uuid().optional(),
+  outletId: z.coerce.number().int(),
+  tableId: z.coerce.number().int().optional(),
+  customerId: z.coerce.number().int().optional(),
+  orderDiscountId: z.coerce.number().int().optional(),
   notes: z.string().optional(),
   items: z.array(itemInput).default([]),
 });
@@ -36,27 +36,27 @@ export const addItemSchema = itemInput;
 
 export const updateItemSchema = z.object({
   quantity: z.number().int().positive().optional(),
-  discountId: z.string().uuid().nullable().optional(),
+  discountId: z.coerce.number().int().nullable().optional(),
 });
 
 export const updateTransactionSchema = z.object({
-  customerId: z.string().uuid().nullable().optional(),
-  tableId: z.string().uuid().nullable().optional(),
-  orderDiscountId: z.string().uuid().nullable().optional(),
+  customerId: z.coerce.number().int().nullable().optional(),
+  tableId: z.coerce.number().int().nullable().optional(),
+  orderDiscountId: z.coerce.number().int().nullable().optional(),
   notes: z.string().optional(),
 });
 
 export const voidSchema = z.object({
   reason: z.string().min(1),
-  approverId: z.string().uuid().optional(),
+  approverId: z.coerce.number().int().optional(),
   approverPassword: z.string().optional(),
 });
 
 export const refundSchema = voidSchema;
 
 export const listQuerySchema = z.object({
-  outletId: z.string().uuid().optional(),
-  cashierId: z.string().uuid().optional(),
+  outletId: z.coerce.number().int().optional(),
+  cashierId: z.coerce.number().int().optional(),
   status: z.enum(["HELD", "OPEN", "COMPLETED", "VOIDED", "REFUNDED"]).optional(),
   paymentMethod: z.enum(["CASH", "CARD", "EWALLET", "GIFT_CARD", "LOYALTY_POINTS"]).optional(),
   dateFrom: z.string().datetime().optional(),

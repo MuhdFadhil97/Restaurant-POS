@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "./client";
 import { KitchenStation } from "./types";
 
-export function useKitchenStations(outletId?: string) {
+export function useKitchenStations(outletId?: number) {
   return useQuery({
     queryKey: ["kitchen-stations", outletId],
     queryFn: async () => (await apiClient.get<KitchenStation[]>("/kitchen-stations", { params: { outletId } })).data,
@@ -13,7 +13,7 @@ export function useKitchenStations(outletId?: string) {
 export function useCreateKitchenStation() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (input: { outletId: string; name: string }) =>
+    mutationFn: async (input: { outletId: number; name: string }) =>
       (await apiClient.post<KitchenStation>("/kitchen-stations", input)).data,
     onSuccess: () => qc.invalidateQueries({ queryKey: ["kitchen-stations"] }),
   });

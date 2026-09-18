@@ -20,7 +20,7 @@ export function useCreateOutlet() {
 export function useUpdateOutlet() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, input }: { id: string; input: Partial<Outlet> }) =>
+    mutationFn: async ({ id, input }: { id: number; input: Partial<Outlet> }) =>
       (await apiClient.patch<Outlet>(`/outlets/${id}`, input)).data,
     onSuccess: () => qc.invalidateQueries({ queryKey: ["outlets"] }),
   });

@@ -3,7 +3,7 @@ import { apiClient } from "./client";
 import { PaymentMethod } from "./types";
 
 export interface ReportParams {
-  outletId?: string;
+  outletId?: number;
   from: string;
   to: string;
   groupBy?: "day" | "week" | "month";
@@ -19,7 +19,7 @@ export interface SalesSummaryRow {
 }
 
 export interface TopProductRow {
-  productId: string;
+  productId: number;
   name: string;
   sku: string;
   quantitySold: number;
@@ -27,7 +27,7 @@ export interface TopProductRow {
 }
 
 export interface SalesByCashierRow {
-  cashierId: string;
+  cashierId: number;
   cashierName: string;
   orderCount: number;
   totalSales: number;

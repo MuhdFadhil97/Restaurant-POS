@@ -19,7 +19,7 @@ export function TransactionDetailModal({
   transactionId,
   onClose,
 }: {
-  transactionId: string | null;
+  transactionId: number | null;
   onClose: () => void;
 }) {
   const user = useAuthStore((s) => s.user);
@@ -42,7 +42,7 @@ export function TransactionDetailModal({
   const canVoid = transaction.status === "COMPLETED" && (user?.role === "MANAGER" || user?.role === "ADMIN" || user?.role === "CASHIER");
   const canRefund = transaction.status === "COMPLETED";
 
-  async function handleConfirm(input: { reason: string; approverId?: string; approverPassword?: string }) {
+  async function handleConfirm(input: { reason: string; approverId?: number; approverPassword?: string }) {
     setError(null);
     try {
       if (action === "void") {

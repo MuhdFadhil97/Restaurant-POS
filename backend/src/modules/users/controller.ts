@@ -8,7 +8,7 @@ export const list = asyncHandler(async (_req: Request, res: Response) => {
 });
 
 export const getOne = asyncHandler(async (req: Request, res: Response) => {
-  res.json(await service.getUser(req.params.id));
+  res.json(await service.getUser(Number(req.params.id)));
 });
 
 export const create = asyncHandler(async (req: Request, res: Response) => {
@@ -17,10 +17,10 @@ export const create = asyncHandler(async (req: Request, res: Response) => {
 
 export const update = asyncHandler(async (req: Request, res: Response) => {
   if (!req.user) throw ApiError.unauthorized();
-  res.json(await service.updateUser(req.params.id, req.body, req.user.userId));
+  res.json(await service.updateUser(Number(req.params.id), req.body, req.user.userId));
 });
 
 export const remove = asyncHandler(async (req: Request, res: Response) => {
-  await service.deleteUser(req.params.id);
+  await service.deleteUser(Number(req.params.id));
   res.status(204).send();
 });

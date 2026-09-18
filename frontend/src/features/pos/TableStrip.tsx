@@ -6,7 +6,7 @@ export function TableStrip({
   onSelect,
 }: {
   tables: TableDto[];
-  selectedTableId: string | null;
+  selectedTableId: number | null;
   onSelect: (table: TableDto | null) => void;
 }) {
   return (

@@ -18,7 +18,7 @@ function monthRange(month: string) {
 
 // Staff assignable to this outlet's roster (ADMIN/MANAGER building the
 // monthly grid need this, but the full /users list is ADMIN-only).
-export async function listStaffForOutlet(outletId: string) {
+export async function listStaffForOutlet(outletId: number) {
   const access = await prisma.userOutlet.findMany({
     where: { outletId, user: { deletedAt: null, isActive: true } },
     include: { user: { select: { id: true, name: true, role: true } } },
@@ -27,7 +27,7 @@ export async function listStaffForOutlet(outletId: string) {
   return access.map((a) => a.user);
 }
 
-export async function listShiftSchedulesForMonth(outletId: string, month: string) {
+export async function listShiftSchedulesForMonth(outletId: number, month: string) {
   const { from, to } = monthRange(month);
   return prisma.staffShiftSchedule.findMany({
     where: { outletId, date: { gte: from, lte: to } },
@@ -36,7 +36,7 @@ export async function listShiftSchedulesForMonth(outletId: string, month: string
   });
 }
 
-export async function listMySchedules(userId: string, from: string, to: string) {
+export async function listMySchedules(userId: number, from: string, to: string) {
   return prisma.staffShiftSchedule.findMany({
     where: { userId, date: { gte: dateOnlyUtc(from), lte: dateOnlyUtcEndOfDay(to) } },
     include: detailInclude,
@@ -46,7 +46,7 @@ export async function listMySchedules(userId: string, from: string, to: string) 
 
 // Assigning a shift never blocks on overlap (warn-only philosophy) — the
 // caller gets an `overlapWarning` back to surface in the UI.
-export async function createShiftSchedule(createdByUserId: string, input: CreateShiftScheduleInput) {
+export async function createShiftSchedule(createdByUserId: number, input: CreateShiftScheduleInput) {
   const template = await prisma.staffShiftTemplate.findFirst({
     where: { id: input.shiftTemplateId, outletId: input.outletId, deletedAt: null },
   });
@@ -80,13 +80,13 @@ export async function createShiftSchedule(createdByUserId: string, input: Create
   };
 }
 
-export async function updateShiftSchedule(id: string, input: UpdateShiftScheduleInput) {
+export async function updateShiftSchedule(id: number, input: UpdateShiftScheduleInput) {
   const existing = await prisma.staffShiftSchedule.findUnique({ where: { id } });
   if (!existing) throw ApiError.notFound("Schedule entry not found");
   return prisma.staffShiftSchedule.update({ where: { id }, data: input, include: detailInclude });
 }
 
-export async function deleteShiftSchedule(id: string) {
+export async function deleteShiftSchedule(id: number) {
   const existing = await prisma.staffShiftSchedule.findUnique({ where: { id } });
   if (!existing) throw ApiError.notFound("Schedule entry not found");
   await prisma.staffShiftSchedule.delete({ where: { id } });

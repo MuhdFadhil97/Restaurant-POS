@@ -1,0 +1,20 @@
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { apiClient } from "./client";
+import { KitchenStation } from "./types";
+
+export function useKitchenStations(outletId?: string) {
+  return useQuery({
+    queryKey: ["kitchen-stations", outletId],
+    queryFn: async () => (await apiClient.get<KitchenStation[]>("/kitchen-stations", { params: { outletId } })).data,
+    enabled: !!outletId,
+  });
+}
+
+export function useCreateKitchenStation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: { outletId: string; name: string }) =>
+      (await apiClient.post<KitchenStation>("/kitchen-stations", input)).data,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["kitchen-stations"] }),
+  });
+}

@@ -1,0 +1,138 @@
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { apiClient } from "./client";
+import { BulkAdjustPreview, BulkAdjustSummary, ImportPreview, ImportSummary, Product, ProductCategory } from "./types";
+
+export function useProducts(outletId?: string) {
+  return useQuery({
+    queryKey: ["products", outletId],
+    queryFn: async () =>
+      (await apiClient.get<Product[]>("/products", { params: { outletId } })).data,
+    enabled: !!outletId,
+  });
+}
+
+export function useCreateProduct() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: Record<string, unknown>) =>
+      (await apiClient.post<Product>("/products", input)).data,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["products"] }),
+  });
+}
+
+export function useUpdateProduct() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, input }: { id: string; input: Record<string, unknown> }) =>
+      (await apiClient.patch<Product>(`/products/${id}`, input)).data,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["products"] }),
+  });
+}
+
+export function useDeleteProduct() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => apiClient.delete(`/products/${id}`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["products"] }),
+  });
+}
+
+export function usePreviewImportProducts() {
+  return useMutation({
+    mutationFn: async ({ csv, outletId }: { csv: string; outletId?: string }) =>
+      (await apiClient.post<ImportPreview>("/products/import/preview", { csv }, { params: { outletId } })).data,
+  });
+}
+
+export function useImportProducts() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ csv, outletId }: { csv: string; outletId?: string }) =>
+      (await apiClient.post<ImportSummary>("/products/import", { csv }, { params: { outletId } })).data,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["products"] }),
+  });
+}
+
+export async function downloadProductImportTemplate() {
+  const response = await apiClient.get<string>("/products/import/template", { responseType: "text" });
+  const blob = new Blob([response.data], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "products-import-template.csv";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
+export function usePreviewBulkAdjustProducts() {
+  return useMutation({
+    mutationFn: async ({ csv, outletId }: { csv: string; outletId: string }) =>
+      (await apiClient.post<BulkAdjustPreview>("/products/bulk-adjust/preview", { csv }, { params: { outletId } })).data,
+  });
+}
+
+export function useBulkAdjustProducts() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ csv, outletId }: { csv: string; outletId: string }) =>
+      (await apiClient.post<BulkAdjustSummary>("/products/bulk-adjust", { csv }, { params: { outletId } })).data,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["products"] });
+      qc.invalidateQueries({ queryKey: ["low-stock"] });
+      qc.invalidateQueries({ queryKey: ["movements"] });
+    },
+  });
+}
+
+export async function downloadBulkAdjustmentTemplate() {
+  const response = await apiClient.get<string>("/products/bulk-adjust/template", { responseType: "text" });
+  const blob = new Blob([response.data], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "products-bulk-adjustment-template.csv";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
+export function useCategories() {
+  return useQuery({
+    queryKey: ["categories"],
+    queryFn: async () => (await apiClient.get<ProductCategory[]>("/categories")).data,
+  });
+}
+
+export function useCreateCategory() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (name: string) => (await apiClient.post<ProductCategory>("/categories", { name })).data,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["categories"] }),
+  });
+}
+
+export function useUpdateCategory() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, name }: { id: string; name: string }) =>
+      (await apiClient.patch<ProductCategory>(`/categories/${id}`, { name })).data,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["categories"] });
+      qc.invalidateQueries({ queryKey: ["products"] });
+    },
+  });
+}
+
+export function useDeleteCategory() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => apiClient.delete(`/categories/${id}`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["categories"] });
+      qc.invalidateQueries({ queryKey: ["products"] });
+    },
+  });
+}

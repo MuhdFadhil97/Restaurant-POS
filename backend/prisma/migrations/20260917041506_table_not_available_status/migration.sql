@@ -1,0 +1,2 @@
+-- AlterEnum
+ALTER TYPE "TableStatus" ADD VALUE 'NOT_AVAILABLE';

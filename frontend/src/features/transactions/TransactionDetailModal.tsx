@@ -94,6 +94,12 @@ export function TransactionDetailModal({
               <span>Discount</span>
               <span>-{money(Number(transaction.discountTotal))}</span>
             </div>
+            {Number(transaction.serviceChargeTotal) > 0 && (
+              <div className="flex justify-between text-gray-600">
+                <span>Service Charge</span>
+                <span>{money(Number(transaction.serviceChargeTotal))}</span>
+              </div>
+            )}
             <div className="flex justify-between text-gray-600">
               <span>Tax</span>
               <span>{money(Number(transaction.taxTotal))}</span>

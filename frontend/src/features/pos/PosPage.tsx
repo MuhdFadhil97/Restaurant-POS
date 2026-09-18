@@ -5,6 +5,7 @@ import { useProducts } from "@/api/products";
 import { useTables } from "@/api/tables";
 import { useCustomers } from "@/api/customers";
 import { useDiscounts } from "@/api/discounts";
+import { useTaxRates } from "@/api/taxRates";
 import {
   useAddItem,
   useCheckout,
@@ -26,6 +27,7 @@ import { TableStrip } from "./TableStrip";
 import { FloorPlanCanvas, FloorPlanLegend } from "../settings/FloorPlanCanvas";
 import { PaymentModal, PendingPayment } from "./PaymentModal";
 import { HeldTransactionsModal } from "./HeldTransactionsModal";
+import { ReceiptPreviewModal } from "./ReceiptPreviewModal";
 import { LocalCartItem, previewLine, previewTotals } from "./cartMath";
 import { ShiftBar } from "./ShiftBar";
 
@@ -37,6 +39,7 @@ export function PosPage() {
   const { data: tables } = useTables(outletId ?? undefined);
   const { data: customers } = useCustomers();
   const { data: discounts } = useDiscounts();
+  const { data: taxRates } = useTaxRates(outletId ?? undefined);
   const { data: openTransactions } = useTransactions({ outletId: outletId ?? undefined, status: "OPEN" });
   const { data: heldTransactions } = useHeldTransactions(outletId ?? undefined);
 
@@ -48,6 +51,7 @@ export function PosPage() {
   const [showPayment, setShowPayment] = useState(false);
   const [showHeld, setShowHeld] = useState(false);
   const [paymentError, setPaymentError] = useState<string | null>(null);
+  const [paidTransaction, setPaidTransaction] = useState<TransactionDto | null>(null);
 
   const { data: resumingTx } = useTransaction(resumingId ?? undefined);
 
@@ -67,6 +71,13 @@ export function PosPage() {
   }
 
   const orderDiscountObj = discounts?.find((d) => d.id === orderDiscountId) ?? null;
+  const activeOutlet = outlets?.find((o) => o.id === outletId) ?? null;
+  const defaultTaxRate = taxRates?.find((t) => t.isDefault)?.rate ?? 0;
+  const serviceChargeConfig = {
+    enabled: activeOutlet?.serviceChargeEnabled ?? false,
+    rate: activeOutlet?.serviceChargeRate ?? 0,
+    taxRate: defaultTaxRate,
+  };
 
   const lines: CartLineView[] = resumingTx
     ? resumingTx.items.map((item) => ({
@@ -95,10 +106,11 @@ export function PosPage() {
     ? {
         subtotal: Number(resumingTx.subtotal),
         discountTotal: Number(resumingTx.discountTotal),
+        serviceChargeTotal: Number(resumingTx.serviceChargeTotal),
         taxTotal: Number(resumingTx.taxTotal),
         total: Number(resumingTx.total),
       }
-    : previewTotals(localCart, orderDiscountObj);
+    : previewTotals(localCart, orderDiscountObj, serviceChargeConfig);
 
   function toItemInputs() {
     return localCart.map((item) => ({
@@ -225,10 +237,11 @@ export function PosPage() {
   async function handlePayConfirm(payments: PendingPayment[]) {
     setPaymentError(null);
     try {
+      let completed: TransactionDto;
       if (resumingTx) {
-        await finalize.mutateAsync({ id: resumingTx.id, payments });
+        completed = await finalize.mutateAsync({ id: resumingTx.id, payments });
       } else {
-        await checkout.mutateAsync({
+        completed = await checkout.mutateAsync({
           outletId: outletId!,
           tableId: selectedTable?.id,
           items: toItemInputs(),
@@ -239,6 +252,7 @@ export function PosPage() {
       }
       setShowPayment(false);
       resetAll();
+      setPaidTransaction(completed);
     } catch (err) {
       setPaymentError(getErrorMessage(err));
     }
@@ -333,7 +347,7 @@ export function PosPage() {
         busy={finalize.isPending || checkout.isPending}
         error={paymentError}
         customer={customers?.find((c) => c.id === customerId) ?? null}
-        outlet={outlets?.find((o) => o.id === outletId) ?? null}
+        outlet={activeOutlet}
       />
 
       <HeldTransactionsModal
@@ -342,6 +356,8 @@ export function PosPage() {
         transactions={heldTransactions ?? []}
         onResume={handleResumeHeld}
       />
+
+      <ReceiptPreviewModal transaction={paidTransaction} onClose={() => setPaidTransaction(null)} />
     </div>
   );
 }

@@ -33,22 +33,41 @@ export function previewLine(item: LocalCartItem): LinePreview {
   return { lineSubtotal, unitPrice, discountAmount, taxAmount, lineTotal };
 }
 
+export interface ServiceChargeConfig {
+  enabled: boolean;
+  rate: number; // percentage, e.g. 10
+  taxRate: number; // outlet's default tax rate, applied to the service charge itself
+}
+
 export interface TotalsPreview {
   subtotal: number;
   discountTotal: number;
+  serviceChargeTotal: number;
   taxTotal: number;
   total: number;
 }
 
-export function previewTotals(items: LocalCartItem[], orderDiscount: Discount | null): TotalsPreview {
+// Mirrors calculateTotals in backend/src/modules/transactions/calculations.ts
+// (Malaysian F&B order: discount -> service charge -> tax on top of both).
+export function previewTotals(
+  items: LocalCartItem[],
+  orderDiscount: Discount | null,
+  serviceCharge: ServiceChargeConfig
+): TotalsPreview {
   const lines = items.map(previewLine);
   const subtotal = round2(lines.reduce((s, l) => s + l.lineSubtotal, 0));
   const lineDiscountTotal = round2(lines.reduce((s, l) => s + l.discountAmount, 0));
-  const taxTotal = round2(lines.reduce((s, l) => s + l.taxAmount, 0));
-  const orderDiscountAmount = round2(applyDiscountPreview(orderDiscount, subtotal - lineDiscountTotal));
+  const lineTaxTotal = round2(lines.reduce((s, l) => s + l.taxAmount, 0));
+  const netSubtotal = round2(subtotal - lineDiscountTotal);
+
+  const serviceChargeTotal = serviceCharge.enabled ? round2(netSubtotal * (serviceCharge.rate / 100)) : 0;
+  const serviceChargeTax = round2(serviceChargeTotal * (serviceCharge.taxRate / 100));
+  const taxTotal = round2(lineTaxTotal + serviceChargeTax);
+
+  const orderDiscountAmount = round2(applyDiscountPreview(orderDiscount, netSubtotal));
   const discountTotal = round2(lineDiscountTotal + orderDiscountAmount);
-  const total = round2(subtotal - discountTotal + taxTotal);
-  return { subtotal, discountTotal, taxTotal, total };
+  const total = round2(subtotal - discountTotal + serviceChargeTotal + taxTotal);
+  return { subtotal, discountTotal, serviceChargeTotal, taxTotal, total };
 }
 
 export function money(n: number): string {

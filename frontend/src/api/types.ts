@@ -10,6 +10,7 @@ export type PrepStatus = "QUEUED" | "PREPARING" | "READY" | "SERVED";
 export type PurchaseOrderStatus = "DRAFT" | "ORDERED" | "PARTIALLY_RECEIVED" | "RECEIVED" | "CANCELLED";
 export type StockTransferStatus = "PENDING" | "IN_TRANSIT" | "RECEIVED" | "CANCELLED";
 export type StockTakeStatus = "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
+export type EInvoiceStatus = "NOT_APPLICABLE" | "GENERATED" | "CANCELLED";
 
 export interface Outlet {
   id: number;
@@ -17,10 +18,16 @@ export interface Outlet {
   address?: string | null;
   phone?: string | null;
   isActive: boolean;
+  einvoiceTin?: string | null;
+  einvoiceBrn?: string | null;
+  einvoiceMsicCode?: string | null;
+  einvoiceSstNo?: string | null;
   receiptLogoUrl?: string | null;
   receiptFooter?: string | null;
   loyaltyEarnRate?: number;
   loyaltyRedeemRate?: number;
+  serviceChargeEnabled: boolean;
+  serviceChargeRate: number;
 }
 
 export interface UserDto {
@@ -177,10 +184,15 @@ export interface TransactionDto {
   cashier?: { id: number; name: string };
   status: TransactionStatus;
   receiptNumber?: string | null;
+  einvoiceStatus?: EInvoiceStatus;
+  einvoiceUuid?: string | null;
+  einvoiceLongId?: string | null;
+  einvoiceGeneratedAt?: string | null;
   subtotal: number;
   discountTotal: number;
   orderDiscountId?: number | null;
   orderDiscount?: Discount | null;
+  serviceChargeTotal: number;
   taxTotal: number;
   total: number;
   pointsEarned?: number;

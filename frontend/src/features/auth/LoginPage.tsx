@@ -1,7 +1,7 @@
 import { FormEvent, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { login } from "@/api/auth";
-import { setRememberSession, useAuthStore } from "@/store/authStore";
+import { useAuthStore } from "@/store/authStore";
 import { getErrorMessage } from "@/api/client";
 import { getHomeRoute } from "@/lib/roleHome";
 import { Button, Card, ErrorMessage, Input } from "@/components/ui";
@@ -9,7 +9,6 @@ import { Button, Card, ErrorMessage, Input } from "@/components/ui";
 export function LoginPage() {
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
-  const [remember, setRemember] = useState(false);
   const [showForgotHint, setShowForgotHint] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -22,7 +21,6 @@ export function LoginPage() {
     setLoading(true);
     try {
       const result = await login(identifier, password);
-      setRememberSession(remember);
       setSession(result.token, result.user);
       navigate(getHomeRoute(result.user.role));
     } catch (err) {
@@ -88,15 +86,6 @@ export function LoginPage() {
                 </p>
               )}
             </div>
-            <label className="flex items-center gap-2 text-sm text-gray-600">
-              <input
-                type="checkbox"
-                checked={remember}
-                onChange={(e) => setRemember(e.target.checked)}
-                className="rounded border-gray-300 text-orange-600 focus:ring-orange-500"
-              />
-              Keep me signed in on this till
-            </label>
             {error && <ErrorMessage message={error} />}
             <Button type="submit" className="w-full !bg-orange-600 hover:!bg-orange-700" disabled={loading}>
               {loading ? "Signing in..." : "Sign In"}

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { SuppliersTab } from "./SuppliersTab";
 import { PurchaseOrdersTab } from "./PurchaseOrdersTab";
 import { GoodsReceivedNotesTab } from "./GoodsReceivedNotesTab";
@@ -20,7 +21,10 @@ const tabs = [
 ] as const;
 
 export function InventoryPage() {
-  const [active, setActive] = useState<(typeof tabs)[number]["key"]>("suppliers");
+  const [searchParams] = useSearchParams();
+  const tabParam = searchParams.get("tab");
+  const initialTab = tabs.find((t) => t.key === tabParam)?.key ?? "suppliers";
+  const [active, setActive] = useState<(typeof tabs)[number]["key"]>(initialTab);
   const ActiveComponent = tabs.find((t) => t.key === active)!.component;
 
   return (

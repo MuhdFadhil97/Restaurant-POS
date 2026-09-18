@@ -39,30 +39,51 @@ export function applyDiscount(discount: Discount, base: number): number {
   return Math.min(value, base);
 }
 
+export interface ServiceChargeConfig {
+  enabled: boolean;
+  rate: number; // percentage, e.g. 10
+  // Rate used to tax the service charge itself (Malaysian standard: service
+  // charge is added to the taxable base). This is the outlet's default tax
+  // rate, since the service charge isn't tied to any single line's product.
+  taxRate: number;
+}
+
 export interface TotalsResult {
   subtotal: number;
   discountTotal: number;
+  serviceChargeTotal: number;
   taxTotal: number;
   total: number;
 }
 
+// Order of operations follows the standard Malaysian F&B receipt: line
+// discounts reduce the subtotal, the service charge is computed on that
+// discounted subtotal, then tax is charged on (discounted subtotal + service
+// charge). The order-level discount, like today, is applied last and reduces
+// only the final total — not the service charge or tax base — so per-line
+// tax and the service charge stay stable regardless of whether it's later
+// added or removed.
 export function calculateTotals(
   lines: LineResult[],
   lineSubtotals: number[],
-  orderDiscount: Discount | null
+  orderDiscount: Discount | null,
+  serviceCharge: ServiceChargeConfig
 ): TotalsResult {
   const subtotal = round2(lineSubtotals.reduce((sum, s) => sum + s, 0));
   const lineDiscountTotal = round2(lines.reduce((sum, l) => sum + l.discountAmount, 0));
-  const taxTotal = round2(lines.reduce((sum, l) => sum + l.taxAmount, 0));
+  const lineTaxTotal = round2(lines.reduce((sum, l) => sum + l.taxAmount, 0));
+  const netSubtotal = round2(subtotal - lineDiscountTotal);
 
-  const orderDiscountAmount = orderDiscount
-    ? round2(applyDiscount(orderDiscount, subtotal - lineDiscountTotal))
-    : 0;
+  const serviceChargeTotal = serviceCharge.enabled ? round2(netSubtotal * (serviceCharge.rate / 100)) : 0;
+  const serviceChargeTax = round2(serviceChargeTotal * (serviceCharge.taxRate / 100));
+  const taxTotal = round2(lineTaxTotal + serviceChargeTax);
+
+  const orderDiscountAmount = orderDiscount ? round2(applyDiscount(orderDiscount, netSubtotal)) : 0;
   const discountTotal = round2(lineDiscountTotal + orderDiscountAmount);
 
-  const total = round2(subtotal - discountTotal + taxTotal);
+  const total = round2(subtotal - discountTotal + serviceChargeTotal + taxTotal);
 
-  return { subtotal, discountTotal, taxTotal, total };
+  return { subtotal, discountTotal, serviceChargeTotal, taxTotal, total };
 }
 
 export function round2(n: number): number {

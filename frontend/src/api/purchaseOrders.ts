@@ -33,6 +33,36 @@ export function useCreatePurchaseOrder() {
   });
 }
 
+export function useUpdatePurchaseOrder() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      id,
+      input,
+    }: {
+      id: number;
+      input: {
+        supplierId?: number;
+        expectedAt?: string | null;
+        notes?: string;
+        items?: { productId: number; variantId?: number; quantityOrdered: number; unitCost: number }[];
+      };
+    }) => (await apiClient.patch<PurchaseOrderDto>(`/purchase-orders/${id}`, input)).data,
+    onSuccess: (_data, variables) => {
+      qc.invalidateQueries({ queryKey: ["purchase-orders"] });
+      qc.invalidateQueries({ queryKey: ["purchase-order", variables.id] });
+    },
+  });
+}
+
+export function useDeletePurchaseOrder() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: number) => apiClient.delete(`/purchase-orders/${id}`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["purchase-orders"] }),
+  });
+}
+
 export function useMarkOrdered() {
   const qc = useQueryClient();
   return useMutation({

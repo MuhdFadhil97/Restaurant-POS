@@ -15,6 +15,7 @@ export interface CartLineView {
 export interface CartTotals {
   subtotal: number;
   discountTotal: number;
+  serviceChargeTotal: number;
   taxTotal: number;
   total: number;
 }
@@ -120,6 +121,7 @@ export function CartPanel({
         <div className="text-sm space-y-1">
           <Row label="Subtotal" value={totals.subtotal} />
           <Row label="Discount" value={-totals.discountTotal} />
+          {totals.serviceChargeTotal > 0 && <Row label="Service Charge" value={totals.serviceChargeTotal} />}
           <Row label="Tax" value={totals.taxTotal} />
           <div className="flex justify-between font-semibold text-base pt-1 border-t border-gray-200">
             <span>Total</span>

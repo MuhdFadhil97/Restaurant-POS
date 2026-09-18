@@ -8,11 +8,18 @@ import * as controller from "./controller";
 const router = Router();
 
 router.use(authenticate, requireRole("ADMIN", "MANAGER"));
-router.use(validate({ query: reportQuerySchema }));
 
-router.get("/sales-summary", controller.summary);
-router.get("/top-products", controller.topProducts);
-router.get("/sales-by-cashier", controller.byCashier);
-router.get("/sales-by-payment-method", controller.byPaymentMethod);
+// Legacy routes: fixed query shape, validated up front like before.
+router.get("/sales-summary", validate({ query: reportQuerySchema }), controller.summary);
+router.get("/top-products", validate({ query: reportQuerySchema }), controller.topProducts);
+router.get("/sales-by-cashier", validate({ query: reportQuerySchema }), controller.byCashier);
+router.get("/sales-by-payment-method", validate({ query: reportQuerySchema }), controller.byPaymentMethod);
+
+// Generic catalog routes: query shape varies per report, so each report's own
+// schema (via the registry) validates inside the controller instead of a
+// shared `validate()` middleware. Registered after the literal routes above
+// so Express matches those first.
+router.get("/:reportKey/export", controller.exportReport);
+router.get("/:reportKey", controller.getReport);
 
 export default router;

@@ -21,6 +21,15 @@ export const create = asyncHandler(async (req: Request, res: Response) => {
   res.status(201).json(await service.createPurchaseOrder(user.userId, req.body));
 });
 
+export const update = asyncHandler(async (req: Request, res: Response) => {
+  res.json(await service.updatePurchaseOrder(Number(req.params.id), req.body));
+});
+
+export const remove = asyncHandler(async (req: Request, res: Response) => {
+  await service.deletePurchaseOrder(Number(req.params.id));
+  res.status(204).send();
+});
+
 export const markOrdered = asyncHandler(async (req: Request, res: Response) => {
   res.json(await service.markOrdered(Number(req.params.id)));
 });

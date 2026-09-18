@@ -4,6 +4,7 @@ import { prisma } from "../../lib/prisma";
 import { ApiError } from "../../lib/apiError";
 import { recordAudit } from "../../lib/audit";
 import { calculateLine, calculateTotals, round2 } from "./calculations";
+import { generateSimulatedEInvoice } from "./einvoice";
 import {
   AddItemInput,
   CheckoutInput,
@@ -42,6 +43,7 @@ async function recalculate(tx: Tx, transactionId: number) {
     include: {
       items: { include: { product: { include: { taxRate: true } }, variant: true, discount: true } },
       orderDiscount: true,
+      outlet: { include: { taxRates: { where: { isDefault: true }, take: 1 } } },
     },
   });
 
@@ -69,13 +71,18 @@ async function recalculate(tx: Tx, transactionId: number) {
   );
 
   const lineSubtotals = transaction.items.map((item, i) => lineResults[i].unitPrice * item.quantity);
-  const totals = calculateTotals(lineResults, lineSubtotals, transaction.orderDiscount);
+  const totals = calculateTotals(lineResults, lineSubtotals, transaction.orderDiscount, {
+    enabled: transaction.outlet.serviceChargeEnabled,
+    rate: Number(transaction.outlet.serviceChargeRate),
+    taxRate: Number(transaction.outlet.taxRates[0]?.rate ?? 0),
+  });
 
   return tx.transaction.update({
     where: { id: transactionId },
     data: {
       subtotal: totals.subtotal,
       discountTotal: totals.discountTotal,
+      serviceChargeTotal: totals.serviceChargeTotal,
       taxTotal: totals.taxTotal,
       total: totals.total,
     },
@@ -394,6 +401,20 @@ async function nextReceiptNumber(tx: Tx): Promise<string> {
   return `REC${dateStr}${String(sequence.lastNumber).padStart(6, "0")}`;
 }
 
+// Assigns a simulated LHDN e-Invoice at COMPLETED, gated on the outlet
+// having a TIN configured (the field a real MyInvois submission requires).
+// Outlets that haven't opted in keep behaving exactly as before this feature.
+function einvoiceFields(outlet: { einvoiceTin: string | null }) {
+  if (!outlet.einvoiceTin) return { einvoiceStatus: "NOT_APPLICABLE" as const };
+  const sim = generateSimulatedEInvoice();
+  return {
+    einvoiceStatus: "GENERATED" as const,
+    einvoiceUuid: sim.uuid,
+    einvoiceLongId: sim.longId,
+    einvoiceGeneratedAt: sim.generatedAt,
+  };
+}
+
 // One-shot path used by the fast retail checkout screen: create + pay in a
 // single atomic operation.
 export async function checkout(cashierId: number, input: CheckoutInput) {
@@ -451,7 +472,7 @@ export async function checkout(cashierId: number, input: CheckoutInput) {
 
     return tx.transaction.update({
       where: { id: created.id },
-      data: { status: "COMPLETED", pointsEarned, pointsRedeemed, receiptNumber },
+      data: { status: "COMPLETED", pointsEarned, pointsRedeemed, receiptNumber, ...einvoiceFields(recalculated.outlet) },
       include: detailInclude,
     });
   });
@@ -463,7 +484,7 @@ export async function finalize(transactionId: number, cashierId: number, input: 
     const transaction = await ensureMutable(tx, transactionId);
     const withItems = await tx.transaction.findUniqueOrThrow({
       where: { id: transactionId },
-      include: { items: true },
+      include: { items: true, outlet: true },
     });
 
     if (withItems.items.length === 0) {
@@ -493,7 +514,7 @@ export async function finalize(transactionId: number, cashierId: number, input: 
 
     return tx.transaction.update({
       where: { id: transactionId },
-      data: { status: "COMPLETED", pointsEarned, pointsRedeemed, receiptNumber },
+      data: { status: "COMPLETED", pointsEarned, pointsRedeemed, receiptNumber, ...einvoiceFields(withItems.outlet) },
       include: detailInclude,
     });
   });
@@ -591,6 +612,10 @@ export async function voidTransaction(
       await tx.table.update({ where: { id: transaction.tableId }, data: { status: "AVAILABLE" } });
     }
 
+    // Mirrors real MyInvois behavior: a cancellation, not a data wipe — the
+    // uuid/longId/generatedAt stay intact for audit purposes.
+    const einvoiceCancel = transaction.einvoiceStatus === "GENERATED" ? { einvoiceStatus: "CANCELLED" as const } : {};
+
     const updated = await tx.transaction.update({
       where: { id: transactionId },
       data: {
@@ -599,6 +624,7 @@ export async function voidTransaction(
         voidedAt: new Date(),
         voidedByUserId: actorUserId,
         approvedByUserId,
+        ...einvoiceCancel,
       },
       include: detailInclude,
     });
@@ -641,6 +667,8 @@ export async function refundTransaction(
       actorUserId
     );
 
+    const einvoiceCancel = transaction.einvoiceStatus === "GENERATED" ? { einvoiceStatus: "CANCELLED" as const } : {};
+
     const updated = await tx.transaction.update({
       where: { id: transactionId },
       data: {
@@ -649,6 +677,7 @@ export async function refundTransaction(
         voidedAt: new Date(),
         voidedByUserId: actorUserId,
         approvedByUserId,
+        ...einvoiceCancel,
       },
       include: detailInclude,
     });

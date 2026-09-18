@@ -1,6 +1,6 @@
 import { prisma } from "../../lib/prisma";
 import { ApiError } from "../../lib/apiError";
-import { CreatePurchaseOrderInput, ListQuery } from "./validation";
+import { CreatePurchaseOrderInput, ListQuery, UpdatePurchaseOrderInput } from "./validation";
 
 const detailInclude = {
   outlet: true,
@@ -35,6 +35,35 @@ export async function createPurchaseOrder(createdByUserId: number, input: Create
     },
     include: detailInclude,
   });
+}
+
+export async function updatePurchaseOrder(id: number, input: UpdatePurchaseOrderInput) {
+  const po = await prisma.purchaseOrder.findUnique({ where: { id } });
+  if (!po) throw ApiError.notFound("Purchase order not found");
+  if (po.status !== "DRAFT") throw ApiError.badRequest("Only draft purchase orders can be edited");
+
+  return prisma.$transaction(async (tx) => {
+    if (input.items) {
+      await tx.purchaseOrderItem.deleteMany({ where: { purchaseOrderId: id } });
+    }
+    return tx.purchaseOrder.update({
+      where: { id },
+      data: {
+        supplierId: input.supplierId,
+        expectedAt: input.expectedAt === undefined ? undefined : input.expectedAt ? new Date(input.expectedAt) : null,
+        notes: input.notes,
+        items: input.items ? { create: input.items } : undefined,
+      },
+      include: detailInclude,
+    });
+  });
+}
+
+export async function deletePurchaseOrder(id: number) {
+  const po = await prisma.purchaseOrder.findUnique({ where: { id } });
+  if (!po) throw ApiError.notFound("Purchase order not found");
+  if (po.status !== "DRAFT") throw ApiError.badRequest("Only draft purchase orders can be deleted");
+  await prisma.purchaseOrder.delete({ where: { id } });
 }
 
 export async function markOrdered(id: number) {

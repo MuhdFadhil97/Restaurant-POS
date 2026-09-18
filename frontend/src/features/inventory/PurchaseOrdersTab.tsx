@@ -1,18 +1,21 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useOutletStore } from "@/store/outletStore";
 import { useSuppliers } from "@/api/suppliers";
 import { useProducts } from "@/api/products";
 import {
   useCancelPurchaseOrder,
   useCreatePurchaseOrder,
+  useDeletePurchaseOrder,
   useMarkOrdered,
   usePurchaseOrder,
   usePurchaseOrders,
+  useUpdatePurchaseOrder,
 } from "@/api/purchaseOrders";
 import { useCreateGoodsReceivedNote } from "@/api/goodsReceivedNotes";
 import { getErrorMessage } from "@/api/client";
 import { Badge, Button, Card, ErrorMessage, Input, Modal, Select, Spinner } from "@/components/ui";
 import { money } from "@/features/pos/cartMath";
+import { Product, Supplier } from "@/api/types";
 
 const statusColor: Record<string, "gray" | "yellow" | "blue" | "green" | "red"> = {
   DRAFT: "gray",
@@ -28,41 +31,53 @@ interface DraftItem {
   unitCost: string;
 }
 
+const emptyItems: DraftItem[] = [{ productId: "", quantityOrdered: "", unitCost: "" }];
+
 export function PurchaseOrdersTab() {
   const outletId = useOutletStore((s) => s.activeOutletId);
   const { data: suppliers } = useSuppliers();
   const { data: products } = useProducts(outletId ?? undefined);
   const { data: orders, isLoading } = usePurchaseOrders(outletId ?? undefined);
   const createPO = useCreatePurchaseOrder();
+  const updatePO = useUpdatePurchaseOrder();
+  const deletePO = useDeletePurchaseOrder();
   const markOrdered = useMarkOrdered();
   const cancelPO = useCancelPurchaseOrder();
   const createGrn = useCreateGoodsReceivedNote();
 
   const [showForm, setShowForm] = useState(false);
-  const [supplierId, setSupplierId] = useState("");
-  const [items, setItems] = useState<DraftItem[]>([{ productId: "", quantityOrdered: "", unitCost: "" }]);
+  const [editingId, setEditingId] = useState<number | null>(null);
   const [receivingId, setReceivingId] = useState<number | null>(null);
+  const { data: editingOrder } = usePurchaseOrder(editingId ?? undefined);
 
-  function addRow() {
-    setItems((prev) => [...prev, { productId: "", quantityOrdered: "", unitCost: "" }]);
-  }
-  function updateRow(i: number, patch: Partial<DraftItem>) {
-    setItems((prev) => prev.map((row, idx) => (idx === i ? { ...row, ...patch } : row)));
-  }
-  function removeRow(i: number) {
-    setItems((prev) => prev.filter((_, idx) => idx !== i));
-  }
-
-  async function handleCreate() {
-    if (!outletId || !supplierId) return;
+  async function handleCreate(supplierId: number, items: DraftItem[]) {
+    if (!outletId) return;
     const validItems = items
       .filter((i) => i.productId && Number(i.quantityOrdered) > 0)
       .map((i) => ({ productId: Number(i.productId), quantityOrdered: Number(i.quantityOrdered), unitCost: Number(i.unitCost) || 0 }));
     if (validItems.length === 0) return;
-    await createPO.mutateAsync({ outletId, supplierId: Number(supplierId), items: validItems });
+    await createPO.mutateAsync({ outletId, supplierId, items: validItems });
     setShowForm(false);
-    setSupplierId("");
-    setItems([{ productId: "", quantityOrdered: "", unitCost: "" }]);
+  }
+
+  async function handleUpdate(supplierId: number, items: DraftItem[]) {
+    if (!editingId) return;
+    const validItems = items
+      .filter((i) => i.productId && Number(i.quantityOrdered) > 0)
+      .map((i) => ({ productId: Number(i.productId), quantityOrdered: Number(i.quantityOrdered), unitCost: Number(i.unitCost) || 0 }));
+    if (validItems.length === 0) return;
+    await updatePO.mutateAsync({ id: editingId, input: { supplierId, items: validItems } });
+    setEditingId(null);
+  }
+
+  async function handleDelete(orderId: number) {
+    if (!window.confirm("Delete this draft purchase order? This cannot be undone.")) return;
+    await deletePO.mutateAsync(orderId);
+  }
+
+  async function handleCancel(orderId: number) {
+    if (!window.confirm("Cancel this purchase order?")) return;
+    await cancelPO.mutateAsync(orderId);
   }
 
   if (!outletId) return <p className="text-gray-500">Select an outlet first.</p>;
@@ -96,9 +111,14 @@ export function PurchaseOrdersTab() {
                   </td>
                   <td className="px-4 py-2 text-right space-x-2">
                     {o.status === "DRAFT" && (
-                      <button onClick={() => markOrdered.mutate(o.id)} className="text-brand-600 hover:underline">
-                        Mark Ordered
-                      </button>
+                      <>
+                        <button onClick={() => setEditingId(o.id)} className="text-brand-600 hover:underline">
+                          Edit
+                        </button>
+                        <button onClick={() => markOrdered.mutate(o.id)} className="text-brand-600 hover:underline">
+                          Confirm Order
+                        </button>
+                      </>
                     )}
                     {(o.status === "ORDERED" || o.status === "PARTIALLY_RECEIVED") && (
                       <button onClick={() => setReceivingId(o.id)} className="text-brand-600 hover:underline">
@@ -106,8 +126,13 @@ export function PurchaseOrdersTab() {
                       </button>
                     )}
                     {o.status !== "RECEIVED" && o.status !== "CANCELLED" && (
-                      <button onClick={() => cancelPO.mutate(o.id)} className="text-red-500 hover:underline">
+                      <button onClick={() => handleCancel(o.id)} className="text-red-500 hover:underline">
                         Cancel
+                      </button>
+                    )}
+                    {o.status === "DRAFT" && (
+                      <button onClick={() => handleDelete(o.id)} className="text-red-500 hover:underline">
+                        Delete
                       </button>
                     )}
                   </td>
@@ -125,60 +150,33 @@ export function PurchaseOrdersTab() {
         )}
       </Card>
 
-      <Modal open={showForm} onClose={() => setShowForm(false)} title="New Purchase Order">
-        <div className="space-y-3">
-          <Select value={supplierId} onChange={(e) => setSupplierId(e.target.value)}>
-            <option value="">Select supplier</option>
-            {suppliers?.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name}
-              </option>
-            ))}
-          </Select>
-          <div className="space-y-2">
-            {items.map((row, i) => (
-              <div key={i} className="grid grid-cols-4 gap-2 items-center">
-                <Select
-                  value={row.productId}
-                  onChange={(e) => updateRow(i, { productId: e.target.value })}
-                  className="col-span-2"
-                >
-                  <option value="">Product</option>
-                  {products?.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name}
-                    </option>
-                  ))}
-                </Select>
-                <Input
-                  type="number"
-                  placeholder="Qty"
-                  value={row.quantityOrdered}
-                  onChange={(e) => updateRow(i, { quantityOrdered: e.target.value })}
-                />
-                <div className="flex gap-1">
-                  <Input
-                    type="number"
-                    step="0.01"
-                    placeholder="Unit cost"
-                    value={row.unitCost}
-                    onChange={(e) => updateRow(i, { unitCost: e.target.value })}
-                  />
-                  <button onClick={() => removeRow(i)} className="text-gray-300 hover:text-red-500">
-                    ✕
-                  </button>
-                </div>
-              </div>
-            ))}
-            <button onClick={addRow} className="text-sm text-brand-600 hover:underline">
-              + Add item
-            </button>
-          </div>
-          <Button className="w-full" onClick={handleCreate} disabled={createPO.isPending || !supplierId}>
-            Create Purchase Order
-          </Button>
-        </div>
-      </Modal>
+      <PurchaseOrderFormModal
+        open={showForm}
+        title="New Purchase Order"
+        submitLabel="Create Purchase Order"
+        suppliers={suppliers}
+        products={products}
+        submitting={createPO.isPending}
+        onClose={() => setShowForm(false)}
+        onSubmit={handleCreate}
+      />
+
+      <PurchaseOrderFormModal
+        open={!!editingId}
+        title="Edit Purchase Order"
+        submitLabel="Save Changes"
+        suppliers={suppliers}
+        products={products}
+        submitting={updatePO.isPending}
+        initialSupplierId={editingOrder?.supplierId}
+        initialItems={editingOrder?.items.map((i) => ({
+          productId: String(i.productId),
+          quantityOrdered: String(i.quantityOrdered),
+          unitCost: String(i.unitCost),
+        }))}
+        onClose={() => setEditingId(null)}
+        onSubmit={handleUpdate}
+      />
 
       <ReceiveModal
         orderId={receivingId}
@@ -187,6 +185,115 @@ export function PurchaseOrdersTab() {
         busy={createGrn.isPending}
       />
     </div>
+  );
+}
+
+function PurchaseOrderFormModal({
+  open,
+  title,
+  submitLabel,
+  suppliers,
+  products,
+  submitting,
+  initialSupplierId,
+  initialItems,
+  onClose,
+  onSubmit,
+}: {
+  open: boolean;
+  title: string;
+  submitLabel: string;
+  suppliers?: Supplier[];
+  products?: Product[];
+  submitting: boolean;
+  initialSupplierId?: number;
+  initialItems?: DraftItem[];
+  onClose: () => void;
+  onSubmit: (supplierId: number, items: DraftItem[]) => Promise<void>;
+}) {
+  const [supplierId, setSupplierId] = useState("");
+  const [items, setItems] = useState<DraftItem[]>(emptyItems);
+
+  // Re-seed fields whenever the modal opens, mirroring SuppliersTab's fix for
+  // stale form state when reopening on a different (or newly loaded) record.
+  useEffect(() => {
+    if (open) {
+      setSupplierId(initialSupplierId ? String(initialSupplierId) : "");
+      setItems(initialItems && initialItems.length > 0 ? initialItems : emptyItems);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, initialSupplierId, initialItems]);
+
+  function addRow() {
+    setItems((prev) => [...prev, { productId: "", quantityOrdered: "", unitCost: "" }]);
+  }
+  function updateRow(i: number, patch: Partial<DraftItem>) {
+    setItems((prev) => prev.map((row, idx) => (idx === i ? { ...row, ...patch } : row)));
+  }
+  function removeRow(i: number) {
+    setItems((prev) => prev.filter((_, idx) => idx !== i));
+  }
+
+  async function handleSubmit() {
+    if (!supplierId) return;
+    await onSubmit(Number(supplierId), items);
+  }
+
+  return (
+    <Modal open={open} onClose={onClose} title={title}>
+      <div className="space-y-3">
+        <Select value={supplierId} onChange={(e) => setSupplierId(e.target.value)}>
+          <option value="">Select supplier</option>
+          {suppliers?.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.name}
+            </option>
+          ))}
+        </Select>
+        <div className="space-y-2">
+          {items.map((row, i) => (
+            <div key={i} className="grid grid-cols-4 gap-2 items-center">
+              <Select
+                value={row.productId}
+                onChange={(e) => updateRow(i, { productId: e.target.value })}
+                className="col-span-2"
+              >
+                <option value="">Product</option>
+                {products?.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </Select>
+              <Input
+                type="number"
+                placeholder="Qty"
+                value={row.quantityOrdered}
+                onChange={(e) => updateRow(i, { quantityOrdered: e.target.value })}
+              />
+              <div className="flex gap-1">
+                <Input
+                  type="number"
+                  step="0.01"
+                  placeholder="Unit cost"
+                  value={row.unitCost}
+                  onChange={(e) => updateRow(i, { unitCost: e.target.value })}
+                />
+                <button onClick={() => removeRow(i)} className="text-gray-300 hover:text-red-500">
+                  ✕
+                </button>
+              </div>
+            </div>
+          ))}
+          <button onClick={addRow} className="text-sm text-brand-600 hover:underline">
+            + Add item
+          </button>
+        </div>
+        <Button className="w-full" onClick={handleSubmit} disabled={submitting || !supplierId}>
+          {submitLabel}
+        </Button>
+      </div>
+    </Modal>
   );
 }
 

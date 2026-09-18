@@ -6,6 +6,12 @@ export const createOutletSchema = z.object({
   phone: z.string().optional(),
   receiptLogoUrl: z.string().url().optional(),
   receiptFooter: z.string().optional(),
+  serviceChargeEnabled: z.boolean().optional(),
+  serviceChargeRate: z.number().min(0).max(100).optional(),
+  einvoiceTin: z.string().trim().min(1).optional(),
+  einvoiceBrn: z.string().trim().min(1).optional(),
+  einvoiceMsicCode: z.string().trim().regex(/^\d{5}$/, "MSIC code must be 5 digits").optional(),
+  einvoiceSstNo: z.string().trim().min(1).optional(),
 });
 
 export const updateOutletSchema = createOutletSchema.partial().extend({

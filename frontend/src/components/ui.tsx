@@ -90,3 +90,29 @@ export function Spinner() {
 export function ErrorMessage({ message }: { message: string }) {
   return <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{message}</div>;
 }
+
+export function Tabs<K extends string>({
+  tabs,
+  active,
+  onChange,
+}: {
+  tabs: readonly { key: K; label: string }[];
+  active: K;
+  onChange: (key: K) => void;
+}) {
+  return (
+    <div className="flex gap-2 border-b border-gray-200 overflow-x-auto">
+      {tabs.map((t) => (
+        <button
+          key={t.key}
+          onClick={() => onChange(t.key)}
+          className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px whitespace-nowrap ${
+            active === t.key ? "border-brand-600 text-brand-700" : "border-transparent text-gray-500"
+          }`}
+        >
+          {t.label}
+        </button>
+      ))}
+    </div>
+  );
+}

@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { SuppliersTab } from "./SuppliersTab";
 import { PurchaseOrdersTab } from "./PurchaseOrdersTab";
+import { GoodsReceivedNotesTab } from "./GoodsReceivedNotesTab";
 import { StockTransfersTab } from "./StockTransfersTab";
+import { StockTakeTab } from "./StockTakeTab";
 import { StockAdjustmentTab } from "./StockAdjustmentTab";
 import { MovementLogTab } from "./MovementLogTab";
 import { LowStockTab } from "./LowStockTab";
@@ -9,7 +11,9 @@ import { LowStockTab } from "./LowStockTab";
 const tabs = [
   { key: "suppliers", label: "Suppliers", component: SuppliersTab },
   { key: "purchase-orders", label: "Purchase Orders", component: PurchaseOrdersTab },
+  { key: "goods-received-notes", label: "Goods Received Notes", component: GoodsReceivedNotesTab },
   { key: "stock-transfers", label: "Stock Transfers", component: StockTransfersTab },
+  { key: "stock-take", label: "Stock Take", component: StockTakeTab },
   { key: "stock-adjustment", label: "Stock Adjustment", component: StockAdjustmentTab },
   { key: "movement-log", label: "Movement Log", component: MovementLogTab },
   { key: "low-stock", label: "Low Stock Alerts", component: LowStockTab },

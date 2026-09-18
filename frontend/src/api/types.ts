@@ -9,6 +9,7 @@ export type DiscountScope = "LINE" | "ORDER";
 export type PrepStatus = "QUEUED" | "PREPARING" | "READY" | "SERVED";
 export type PurchaseOrderStatus = "DRAFT" | "ORDERED" | "PARTIALLY_RECEIVED" | "RECEIVED" | "CANCELLED";
 export type StockTransferStatus = "PENDING" | "IN_TRANSIT" | "RECEIVED" | "CANCELLED";
+export type StockTakeStatus = "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
 
 export interface Outlet {
   id: number;
@@ -422,6 +423,58 @@ export interface BulkAdjustPreview {
   toAdjust: number;
   invalid: number;
   rows: BulkAdjustPreviewRow[];
+}
+
+export interface GoodsReceivedNoteItemDto {
+  id: number;
+  purchaseOrderItemId: number;
+  productId: number;
+  product: Product;
+  variantId: number | null;
+  variant: ProductVariant | null;
+  quantityReceived: number;
+  quantityRejected: number;
+  rejectionReason?: string | null;
+  unitCost: number;
+}
+
+export interface GoodsReceivedNoteDto {
+  id: number;
+  purchaseOrderId: number;
+  purchaseOrder?: PurchaseOrderDto;
+  outletId: number;
+  outlet?: Outlet;
+  receivedBy?: { id: number; name: string };
+  receivedAt: string;
+  notes?: string | null;
+  items: GoodsReceivedNoteItemDto[];
+  createdAt: string;
+  _count?: { items: number };
+}
+
+export interface StockTakeItemDto {
+  id: number;
+  productId: number;
+  product: Product;
+  variantId: number | null;
+  variant: ProductVariant | null;
+  systemQuantity: number;
+  countedQuantity: number | null;
+  notes?: string | null;
+}
+
+export interface StockTakeDto {
+  id: number;
+  outletId: number;
+  outlet?: Outlet;
+  status: StockTakeStatus;
+  startedBy?: { id: number; name: string };
+  completedBy?: { id: number; name: string } | null;
+  notes?: string | null;
+  startedAt: string;
+  completedAt?: string | null;
+  items: StockTakeItemDto[];
+  _count?: { items: number };
 }
 
 export interface GiftCard {

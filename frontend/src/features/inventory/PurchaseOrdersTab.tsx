@@ -6,12 +6,13 @@ import {
   useCancelPurchaseOrder,
   useCreatePurchaseOrder,
   useMarkOrdered,
+  usePurchaseOrder,
   usePurchaseOrders,
-  useReceivePurchaseOrder,
 } from "@/api/purchaseOrders";
-import { Badge, Button, Card, Input, Modal, Select, Spinner } from "@/components/ui";
+import { useCreateGoodsReceivedNote } from "@/api/goodsReceivedNotes";
+import { getErrorMessage } from "@/api/client";
+import { Badge, Button, Card, ErrorMessage, Input, Modal, Select, Spinner } from "@/components/ui";
 import { money } from "@/features/pos/cartMath";
-import { PurchaseOrderDto } from "@/api/types";
 
 const statusColor: Record<string, "gray" | "yellow" | "blue" | "green" | "red"> = {
   DRAFT: "gray",
@@ -35,7 +36,7 @@ export function PurchaseOrdersTab() {
   const createPO = useCreatePurchaseOrder();
   const markOrdered = useMarkOrdered();
   const cancelPO = useCancelPurchaseOrder();
-  const receivePO = useReceivePurchaseOrder();
+  const createGrn = useCreateGoodsReceivedNote();
 
   const [showForm, setShowForm] = useState(false);
   const [supplierId, setSupplierId] = useState("");
@@ -65,8 +66,6 @@ export function PurchaseOrdersTab() {
   }
 
   if (!outletId) return <p className="text-gray-500">Select an outlet first.</p>;
-
-  const receivingOrder = orders?.find((o) => o.id === receivingId);
 
   return (
     <div className="space-y-4">
@@ -181,65 +180,130 @@ export function PurchaseOrdersTab() {
         </div>
       </Modal>
 
-      <ReceiveModal order={receivingOrder ?? null} onClose={() => setReceivingId(null)} onReceive={receivePO.mutateAsync} busy={receivePO.isPending} />
+      <ReceiveModal
+        orderId={receivingId}
+        onClose={() => setReceivingId(null)}
+        onReceive={createGrn.mutateAsync}
+        busy={createGrn.isPending}
+      />
     </div>
   );
 }
 
+interface ReceiveRow {
+  received: string;
+  rejected: string;
+  rejectionReason: string;
+}
+
 function ReceiveModal({
-  order,
+  orderId,
   onClose,
   onReceive,
   busy,
 }: {
-  order: PurchaseOrderDto | null;
+  orderId: number | null;
   onClose: () => void;
-  onReceive: (input: { id: number; items: { itemId: number; quantityReceived: number }[] }) => Promise<unknown>;
+  onReceive: (input: {
+    purchaseOrderId: number;
+    notes?: string;
+    items: { purchaseOrderItemId: number; quantityReceived: number; quantityRejected?: number; rejectionReason?: string }[];
+  }) => Promise<unknown>;
   busy: boolean;
 }) {
-  const [quantities, setQuantities] = useState<Record<string, string>>({});
+  const { data: order } = usePurchaseOrder(orderId ?? undefined);
+  const [rows, setRows] = useState<Record<string, ReceiveRow>>({});
+  const [notes, setNotes] = useState("");
+  const [error, setError] = useState<string | null>(null);
 
-  if (!order) return null;
+  if (!orderId) return null;
+
+  const emptyRow: ReceiveRow = { received: "", rejected: "", rejectionReason: "" };
+
+  function updateRow(itemId: number, patch: Partial<ReceiveRow>) {
+    setRows((prev) => ({
+      ...prev,
+      [itemId]: { ...(prev[itemId] ?? emptyRow), ...patch },
+    }));
+  }
 
   async function handleSubmit() {
     if (!order) return;
-    const items = Object.entries(quantities)
-      .filter(([, v]) => Number(v) > 0)
-      .map(([itemId, v]) => ({ itemId: Number(itemId), quantityReceived: Number(v) }));
+    setError(null);
+    const items = Object.entries(rows)
+      .map(([itemId, row]) => ({
+        purchaseOrderItemId: Number(itemId),
+        quantityReceived: Number(row.received) || 0,
+        quantityRejected: Number(row.rejected) || 0,
+        rejectionReason: row.rejectionReason || undefined,
+      }))
+      .filter((i) => i.quantityReceived > 0 || i.quantityRejected > 0);
     if (items.length === 0) return;
-    await onReceive({ id: order.id, items });
-    setQuantities({});
-    onClose();
+    try {
+      await onReceive({ purchaseOrderId: order.id, notes: notes || undefined, items });
+      setRows({});
+      setNotes("");
+      onClose();
+    } catch (err) {
+      setError(getErrorMessage(err));
+    }
   }
 
   return (
-    <Modal open={!!order} onClose={onClose} title="Receive Purchase Order">
+    <Modal open={!!orderId} onClose={onClose} title="Receive Purchase Order (Goods Received Note)">
+      {!order ? (
+        <Spinner />
+      ) : (
       <div className="space-y-3">
         {order.items.map((item) => {
           const remaining = item.quantityOrdered - item.quantityReceived;
+          const row = rows[item.id] ?? { received: "", rejected: "", rejectionReason: "" };
           return (
-            <div key={item.id} className="flex items-center justify-between gap-2">
-              <div>
-                <p className="text-sm font-medium">{item.product.name}</p>
-                <p className="text-xs text-gray-400">
-                  {item.quantityReceived}/{item.quantityOrdered} received — {money(Number(item.unitCost))}/unit
-                </p>
+            <div key={item.id} className="space-y-1 border-b border-gray-100 pb-2 last:border-0">
+              <div className="flex items-center justify-between gap-2">
+                <div>
+                  <p className="text-sm font-medium">{item.product.name}</p>
+                  <p className="text-xs text-gray-400">
+                    {item.quantityReceived}/{item.quantityOrdered} received — {money(Number(item.unitCost))}/unit —
+                    up to {remaining} remaining
+                  </p>
+                </div>
+                <div className="flex gap-1 shrink-0">
+                  <Input
+                    type="number"
+                    max={remaining}
+                    placeholder="Received"
+                    className="w-24"
+                    value={row.received}
+                    onChange={(e) => updateRow(item.id, { received: e.target.value })}
+                  />
+                  <Input
+                    type="number"
+                    max={remaining}
+                    placeholder="Rejected"
+                    className="w-24"
+                    value={row.rejected}
+                    onChange={(e) => updateRow(item.id, { rejected: e.target.value })}
+                  />
+                </div>
               </div>
-              <Input
-                type="number"
-                max={remaining}
-                placeholder={`up to ${remaining}`}
-                className="w-28"
-                value={quantities[item.id] ?? ""}
-                onChange={(e) => setQuantities((prev) => ({ ...prev, [item.id]: e.target.value }))}
-              />
+              {Number(row.rejected) > 0 && (
+                <Input
+                  placeholder="Rejection reason (e.g. damaged, short-shipped)"
+                  value={row.rejectionReason}
+                  onChange={(e) => updateRow(item.id, { rejectionReason: e.target.value })}
+                />
+              )}
             </div>
           );
         })}
+        <Input placeholder="Notes (optional)" value={notes} onChange={(e) => setNotes(e.target.value)} />
+        {error && <ErrorMessage message={error} />}
         <Button className="w-full" onClick={handleSubmit} disabled={busy}>
-          Confirm Receipt
+          {busy ? "Saving..." : "Confirm Receipt"}
         </Button>
       </div>
+      )}
     </Modal>
   );
 }

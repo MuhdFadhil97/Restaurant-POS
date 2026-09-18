@@ -96,6 +96,12 @@ enum StockTransferStatus {
   CANCELLED
 }
 
+enum StockTakeStatus {
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
 // ─────────────────────────────────────────────────────────────────────────
 // Outlets & Users
 // ─────────────────────────────────────────────────────────────────────────
@@ -116,6 +122,12 @@ model Outlet {
   loyaltyEarnRate   Decimal @default(1) @map("loyalty_earn_rate") @db.Decimal(6, 2)
   loyaltyRedeemRate Decimal @default(0.01) @map("loyalty_redeem_rate") @db.Decimal(6, 4)
 
+  // Malaysian-standard F&B service charge, applied at checkout on top of the
+  // discounted subtotal and, in turn, itself subject to tax (see
+  // calculateTotals in transactions/calculations.ts).
+  serviceChargeEnabled Boolean @default(true) @map("service_charge_enabled")
+  serviceChargeRate    Decimal @default(10) @map("service_charge_rate") @db.Decimal(5, 2)
+
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @updatedAt @map("updated_at")
   deletedAt DateTime? @map("deleted_at")
@@ -130,8 +142,10 @@ model Outlet {
   auditLogs           AuditLog[]
   kitchenStations     KitchenStation[]
   purchaseOrders      PurchaseOrder[]
+  goodsReceivedNotes  GoodsReceivedNote[]
   transfersOut        StockTransfer[]      @relation("TransferFromOutlet")
   transfersIn         StockTransfer[]      @relation("TransferToOutlet")
+  stockTakes          StockTake[]
   staffShiftTemplates StaffShiftTemplate[]
   staffShiftSchedules StaffShiftSchedule[]
   staffAttendance     StaffAttendance[]
@@ -164,7 +178,10 @@ model User {
   cashSessions            CashSession[]
   auditLogs               AuditLog[]
   purchaseOrdersCreated   PurchaseOrder[]
+  goodsReceivedNotes      GoodsReceivedNote[]
   stockTransfersRequested StockTransfer[]
+  stockTakesStarted       StockTake[]          @relation("StockTakeStartedBy")
+  stockTakesCompleted     StockTake[]          @relation("StockTakeCompletedBy")
   staffShiftSchedules     StaffShiftSchedule[] @relation("StaffShiftScheduleUser")
   createdShiftSchedules   StaffShiftSchedule[] @relation("StaffShiftScheduleCreatedBy")
   staffAttendance         StaffAttendance[]
@@ -227,13 +244,15 @@ model Product {
   taxRate  TaxRate?         @relation(fields: [taxRateId], references: [id])
   station  KitchenStation?  @relation(fields: [stationId], references: [id])
 
-  variants           ProductVariant[]
-  stocks             ProductStock[]
-  inventoryMovements InventoryMovement[]
-  transactionItems   TransactionItem[]
-  purchaseOrderItems PurchaseOrderItem[]
-  stockTransferItems StockTransferItem[]
-  discounts          Discount[]
+  variants               ProductVariant[]
+  stocks                 ProductStock[]
+  inventoryMovements     InventoryMovement[]
+  transactionItems       TransactionItem[]
+  purchaseOrderItems     PurchaseOrderItem[]
+  stockTransferItems     StockTransferItem[]
+  goodsReceivedNoteItems GoodsReceivedNoteItem[]
+  stockTakeItems         StockTakeItem[]
+  discounts              Discount[]
 
   @@map("products")
 }
@@ -251,11 +270,13 @@ model ProductVariant {
 
   product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
-  stocks             ProductStock[]
-  inventoryMovements InventoryMovement[]
-  transactionItems   TransactionItem[]
-  purchaseOrderItems PurchaseOrderItem[]
-  stockTransferItems StockTransferItem[]
+  stocks                 ProductStock[]
+  inventoryMovements     InventoryMovement[]
+  transactionItems       TransactionItem[]
+  purchaseOrderItems     PurchaseOrderItem[]
+  stockTransferItems     StockTransferItem[]
+  goodsReceivedNoteItems GoodsReceivedNoteItem[]
+  stockTakeItems         StockTakeItem[]
 
   @@map("product_variants")
 }
@@ -460,11 +481,12 @@ model Transaction {
   // Assigned once, when the transaction first reaches COMPLETED. Format: RECYYYYMMDDXXXXXX.
   receiptNumber String? @unique @map("receipt_number")
 
-  subtotal        Decimal @default(0) @db.Decimal(12, 2)
-  discountTotal   Decimal @default(0) @map("discount_total") @db.Decimal(12, 2)
-  orderDiscountId Int?    @map("order_discount_id")
-  taxTotal        Decimal @default(0) @map("tax_total") @db.Decimal(12, 2)
-  total           Decimal @default(0) @db.Decimal(12, 2)
+  subtotal           Decimal @default(0) @db.Decimal(12, 2)
+  discountTotal      Decimal @default(0) @map("discount_total") @db.Decimal(12, 2)
+  orderDiscountId    Int?    @map("order_discount_id")
+  serviceChargeTotal Decimal @default(0) @map("service_charge_total") @db.Decimal(12, 2)
+  taxTotal           Decimal @default(0) @map("tax_total") @db.Decimal(12, 2)
+  total              Decimal @default(0) @db.Decimal(12, 2)
 
   // Loyalty accrual/redemption recorded on the completed transaction.
   pointsEarned   Int @default(0) @map("points_earned")
@@ -693,10 +715,11 @@ model PurchaseOrder {
   createdAt       DateTime            @default(now()) @map("created_at")
   updatedAt       DateTime            @updatedAt @map("updated_at")
 
-  outlet    Outlet              @relation(fields: [outletId], references: [id])
-  supplier  Supplier            @relation(fields: [supplierId], references: [id])
-  createdBy User                @relation(fields: [createdByUserId], references: [id])
-  items     PurchaseOrderItem[]
+  outlet             Outlet              @relation(fields: [outletId], references: [id])
+  supplier           Supplier            @relation(fields: [supplierId], references: [id])
+  createdBy          User                @relation(fields: [createdByUserId], references: [id])
+  items              PurchaseOrderItem[]
+  goodsReceivedNotes GoodsReceivedNote[]
 
   @@map("purchase_orders")
 }
@@ -710,11 +733,53 @@ model PurchaseOrderItem {
   quantityReceived Int     @default(0) @map("quantity_received")
   unitCost         Decimal @map("unit_cost") @db.Decimal(12, 2)
 
-  purchaseOrder PurchaseOrder   @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
-  product       Product         @relation(fields: [productId], references: [id])
-  variant       ProductVariant? @relation(fields: [variantId], references: [id])
+  purchaseOrder          PurchaseOrder           @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  product                Product                 @relation(fields: [productId], references: [id])
+  variant                ProductVariant?         @relation(fields: [variantId], references: [id])
+  goodsReceivedNoteItems GoodsReceivedNoteItem[]
 
   @@map("purchase_order_items")
+}
+
+// A formal receiving document for one delivery against a purchase order — a
+// PO can have several GRNs if the supplier delivers in partial shipments.
+// Distinct from PurchaseOrderItem.quantityReceived (a running total): each
+// GRN is the immutable record of what physically arrived in one delivery,
+// including anything rejected (damaged/short) rather than accepted into stock.
+model GoodsReceivedNote {
+  id               Int      @id @default(autoincrement())
+  purchaseOrderId  Int      @map("purchase_order_id")
+  outletId         Int      @map("outlet_id")
+  receivedByUserId Int      @map("received_by_user_id")
+  receivedAt       DateTime @default(now()) @map("received_at")
+  notes            String?
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  purchaseOrder PurchaseOrder           @relation(fields: [purchaseOrderId], references: [id])
+  outlet        Outlet                  @relation(fields: [outletId], references: [id])
+  receivedBy    User                    @relation(fields: [receivedByUserId], references: [id])
+  items         GoodsReceivedNoteItem[]
+
+  @@map("goods_received_notes")
+}
+
+model GoodsReceivedNoteItem {
+  id                  Int     @id @default(autoincrement())
+  goodsReceivedNoteId Int     @map("goods_received_note_id")
+  purchaseOrderItemId Int     @map("purchase_order_item_id")
+  productId           Int     @map("product_id")
+  variantId           Int?    @map("variant_id")
+  quantityReceived    Int     @map("quantity_received") // accepted into stock
+  quantityRejected    Int     @default(0) @map("quantity_rejected") // damaged/short — never added to stock
+  rejectionReason     String? @map("rejection_reason")
+  unitCost            Decimal @map("unit_cost") @db.Decimal(12, 2)
+
+  goodsReceivedNote GoodsReceivedNote @relation(fields: [goodsReceivedNoteId], references: [id], onDelete: Cascade)
+  purchaseOrderItem PurchaseOrderItem @relation(fields: [purchaseOrderItemId], references: [id])
+  product           Product           @relation(fields: [productId], references: [id])
+  variant           ProductVariant?   @relation(fields: [variantId], references: [id])
+
+  @@map("goods_received_note_items")
 }
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -753,6 +818,48 @@ model StockTransferItem {
   variant       ProductVariant? @relation(fields: [variantId], references: [id])
 
   @@map("stock_transfer_items")
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Stock Take / Cycle Count — periodic physical count reconciled against
+// system stock. Starting a stock take snapshots every ProductStock row at
+// the outlet into StockTakeItem.systemQuantity; completing it writes any
+// variance back to ProductStock as a CORRECTION InventoryMovement.
+// ─────────────────────────────────────────────────────────────────────────
+
+model StockTake {
+  id                Int             @id @default(autoincrement())
+  outletId          Int             @map("outlet_id")
+  status            StockTakeStatus @default(IN_PROGRESS)
+  startedByUserId   Int             @map("started_by_user_id")
+  completedByUserId Int?            @map("completed_by_user_id")
+  notes             String?
+  startedAt         DateTime        @default(now()) @map("started_at")
+  completedAt       DateTime?       @map("completed_at")
+
+  outlet      Outlet          @relation(fields: [outletId], references: [id])
+  startedBy   User            @relation("StockTakeStartedBy", fields: [startedByUserId], references: [id])
+  completedBy User?           @relation("StockTakeCompletedBy", fields: [completedByUserId], references: [id])
+  items       StockTakeItem[]
+
+  @@map("stock_takes")
+}
+
+model StockTakeItem {
+  id              Int     @id @default(autoincrement())
+  stockTakeId     Int     @map("stock_take_id")
+  productId       Int     @map("product_id")
+  variantId       Int?    @map("variant_id")
+  systemQuantity  Int     @map("system_quantity") // snapshot when the stock take started
+  countedQuantity Int?    @map("counted_quantity") // null until a count is entered
+  notes           String?
+
+  stockTake StockTake       @relation(fields: [stockTakeId], references: [id], onDelete: Cascade)
+  product   Product         @relation(fields: [productId], references: [id])
+  variant   ProductVariant? @relation(fields: [variantId], references: [id])
+
+  @@unique([stockTakeId, productId, variantId])
+  @@map("stock_take_items")
 }
 
 // ─────────────────────────────────────────────────────────────────────────

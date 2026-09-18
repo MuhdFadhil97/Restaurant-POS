@@ -41,20 +41,6 @@ export function useMarkOrdered() {
   });
 }
 
-export function useReceivePurchaseOrder() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async ({ id, items }: { id: number; items: { itemId: number; quantityReceived: number }[] }) =>
-      (await apiClient.post<PurchaseOrderDto>(`/purchase-orders/${id}/receive`, { items })).data,
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["purchase-orders"] });
-      qc.invalidateQueries({ queryKey: ["purchase-order"] });
-      qc.invalidateQueries({ queryKey: ["products"] });
-      qc.invalidateQueries({ queryKey: ["movements"] });
-    },
-  });
-}
-
 export function useCancelPurchaseOrder() {
   const qc = useQueryClient();
   return useMutation({

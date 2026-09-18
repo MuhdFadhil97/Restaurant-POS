@@ -9,22 +9,14 @@ function requireUser(req: Request) {
 }
 
 export const list = asyncHandler(async (req: Request, res: Response) => {
-  res.json(await service.listPurchaseOrders(req.query as any));
+  res.json(await service.listGrns(req.query as any));
 });
 
 export const getOne = asyncHandler(async (req: Request, res: Response) => {
-  res.json(await service.getPurchaseOrder(Number(req.params.id)));
+  res.json(await service.getGrn(Number(req.params.id)));
 });
 
 export const create = asyncHandler(async (req: Request, res: Response) => {
   const user = requireUser(req);
-  res.status(201).json(await service.createPurchaseOrder(user.userId, req.body));
-});
-
-export const markOrdered = asyncHandler(async (req: Request, res: Response) => {
-  res.json(await service.markOrdered(Number(req.params.id)));
-});
-
-export const cancel = asyncHandler(async (req: Request, res: Response) => {
-  res.json(await service.cancelPurchaseOrder(Number(req.params.id)));
+  res.status(201).json(await service.createGrn(user.userId, req.body));
 });

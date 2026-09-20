@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import { Prisma } from "@prisma/client";
+import { MulterError } from "multer";
 import { ApiError } from "../lib/apiError";
 
 // Must be registered last. Express recognizes this as an error handler by
@@ -14,6 +15,11 @@ export function errorHandler(
     return res.status(err.status).json({
       error: { message: err.message, code: err.code, details: err.details },
     });
+  }
+
+  if (err instanceof MulterError) {
+    const message = err.code === "LIMIT_FILE_SIZE" ? "Image must be 5MB or smaller" : err.message;
+    return res.status(400).json({ error: { message, code: "BAD_REQUEST" } });
   }
 
   if (err instanceof Prisma.PrismaClientKnownRequestError) {

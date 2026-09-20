@@ -24,21 +24,27 @@ export function Receipt({ transaction }: { transaction: TransactionDto }) {
       <hr className="border-dashed my-2" />
       <div className="flex justify-between text-xs font-bold mb-1">
         <span className="w-5">No.</span>
-        <span className="flex-1">Products</span>
+        <span className="flex-1">Item</span>
+        <span className="w-8 text-center">Qty</span>
         <span>Price (RM)</span>
       </div>
       {transaction.items.map((item, index) => (
         <div key={item.id} className="flex justify-between text-xs mb-1">
           <span className="w-5">{index + 1}.</span>
           <span className="flex-1">
-            {item.quantity}x {item.product.name}
+            {item.product.name}
             {item.variant ? ` (${item.variant.value})` : ""}
           </span>
+          <span className="w-8 text-center">{item.quantity}</span>
           <span>{money(Number(item.lineTotal))}</span>
         </div>
       ))}
       <hr className="border-dashed my-2" />
       <div className="text-xs space-y-0.5">
+        <div className="flex justify-between">
+          <span>Total Items</span>
+          <span>{transaction.items.reduce((sum, item) => sum + item.quantity, 0)}</span>
+        </div>
         <div className="flex justify-between">
           <span>Subtotal</span>
           <span>{money(Number(transaction.subtotal))}</span>

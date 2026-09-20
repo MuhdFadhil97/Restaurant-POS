@@ -29,6 +29,16 @@ export function useUpdateProduct() {
   });
 }
 
+export function useUploadProductImage() {
+  return useMutation({
+    mutationFn: async (file: File) => {
+      const formData = new FormData();
+      formData.append("image", file);
+      return (await apiClient.post<{ imageUrl: string }>("/products/upload-image", formData)).data;
+    },
+  });
+}
+
 export function useDeleteProduct() {
   const qc = useQueryClient();
   return useMutation({

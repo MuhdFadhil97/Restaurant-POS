@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { Product, ProductVariant } from "@/api/types";
 import { useCategories } from "@/api/products";
+import { resolveAssetUrl } from "@/api/client";
 import { Input } from "@/components/ui";
 import { money } from "./cartMath";
 
@@ -101,7 +102,7 @@ function ProductCard({
       <button
         onClick={handleClick}
         disabled={outOfStock}
-        className={`w-full h-28 flex flex-col items-start justify-between border rounded-xl p-3 text-left shadow-sm transition-all active:scale-[0.98] ${
+        className={`w-full flex flex-col items-start justify-between border rounded-xl p-3 text-left shadow-sm transition-all active:scale-[0.98] ${
           outOfStock
             ? "bg-red-50 border-red-200 cursor-not-allowed"
             : lowStock
@@ -109,6 +110,15 @@ function ProductCard({
             : "bg-green-50/60 border-green-200 hover:border-brand-500 hover:shadow-md"
         }`}
       >
+        {product.imageUrl ? (
+          <img
+            src={resolveAssetUrl(product.imageUrl)}
+            alt={product.name}
+            className={`w-full aspect-square object-cover rounded-lg mb-2 ${outOfStock ? "opacity-50" : ""}`}
+          />
+        ) : (
+          <div className="w-full aspect-square rounded-lg mb-2 bg-gray-100" />
+        )}
         <span className={`font-medium text-sm line-clamp-2 ${outOfStock ? "text-gray-400" : "text-gray-900"}`}>
           {product.name}
         </span>

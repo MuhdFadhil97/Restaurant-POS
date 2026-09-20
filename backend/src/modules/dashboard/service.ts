@@ -1,6 +1,6 @@
 import { Prisma, TransactionStatus } from "@prisma/client";
 import { prisma } from "../../lib/prisma";
-import { localDateOnlyUtc } from "../../lib/dateOnly";
+import { localDateOnlyUtc, sqlTimestamp } from "../../lib/dateOnly";
 import { round2 } from "../transactions/calculations";
 import { listLowStock } from "../inventory/service";
 
@@ -38,7 +38,7 @@ async function topProductsToday(outletId: number, todayStart: Date, todayEnd: Da
     JOIN "products" p ON p."id" = ti."product_id"
     WHERE t."outlet_id" = ${outletId}
       AND t."status" = 'COMPLETED'
-      AND t."created_at" >= ${todayStart} AND t."created_at" < ${todayEnd}
+      AND t."created_at" >= ${sqlTimestamp(todayStart)} AND t."created_at" < ${sqlTimestamp(todayEnd)}
     GROUP BY p."id", p."name", p."sku"
     ORDER BY quantity_sold DESC
     LIMIT 5

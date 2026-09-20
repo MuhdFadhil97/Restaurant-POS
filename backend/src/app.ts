@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import morgan from "morgan";
+import path from "path";
 import { env } from "./config/env";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler";
 
@@ -43,6 +44,7 @@ if (env.nodeEnv !== "test") {
 }
 
 app.get("/health", (_req, res) => res.json({ status: "ok" }));
+app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
 app.use("/api/auth", authRoutes);
 app.use("/api/outlets", outletRoutes);

@@ -1,11 +1,11 @@
-import { FormEvent, useState } from "react";
-import { useCategories, useCreateCategory } from "@/api/products";
+import { ChangeEvent, FormEvent, useState } from "react";
+import { useCategories, useCreateCategory, useUploadProductImage } from "@/api/products";
 import { useOutletStore } from "@/store/outletStore";
 import { useTaxRates } from "@/api/taxRates";
 import { useKitchenStations } from "@/api/kitchenStations";
 import { Product } from "@/api/types";
 import { Button, ErrorMessage, Input, Select } from "@/components/ui";
-import { getErrorMessage } from "@/api/client";
+import { getErrorMessage, resolveAssetUrl } from "@/api/client";
 
 interface VariantDraft {
   id?: number;
@@ -28,8 +28,10 @@ export function ProductForm({
   const { data: taxRates } = useTaxRates(outletId ?? undefined);
   const { data: stations } = useKitchenStations(outletId ?? undefined);
   const createCategory = useCreateCategory();
+  const uploadImage = useUploadProductImage();
 
   const [sku, setSku] = useState(initial?.sku ?? "");
+  const [imageUrl, setImageUrl] = useState<string | null>(initial?.imageUrl ?? null);
   const [name, setName] = useState(initial?.name ?? "");
   const [categoryId, setCategoryId] = useState(initial?.categoryId ?? "");
   const [unitPrice, setUnitPrice] = useState(initial?.unitPrice?.toString() ?? "");
@@ -61,6 +63,19 @@ export function ProductForm({
     setNewCategoryName("");
   }
 
+  async function handleImageChange(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setError(null);
+    try {
+      const result = await uploadImage.mutateAsync(file);
+      setImageUrl(result.imageUrl);
+    } catch (err) {
+      setError(getErrorMessage(err));
+    }
+  }
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
@@ -74,6 +89,7 @@ export function ProductForm({
         taxRateId: taxRateId || undefined,
         stationId: stationId || undefined,
         unitOfMeasure,
+        imageUrl,
         lowStockThreshold: Number(lowStockThreshold),
         variants: variants.map((v) => ({ ...v, priceAdjustment: Number(v.priceAdjustment) })),
       });
@@ -84,6 +100,36 @@ export function ProductForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-3">
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Image</label>
+        <div className="flex items-center gap-3">
+          {imageUrl ? (
+            <img src={resolveAssetUrl(imageUrl)} alt="Product" className="w-16 h-16 rounded-lg object-cover border border-gray-200" />
+          ) : (
+            <div className="w-16 h-16 rounded-lg border border-dashed border-gray-300 flex items-center justify-center text-gray-300 text-xs">
+              No image
+            </div>
+          )}
+          <div className="flex items-center gap-2">
+            <label className="text-sm text-brand-600 hover:underline cursor-pointer">
+              {uploadImage.isPending ? "Uploading..." : imageUrl ? "Replace" : "Upload"}
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={handleImageChange}
+                disabled={uploadImage.isPending}
+                className="hidden"
+              />
+            </label>
+            {imageUrl && (
+              <button type="button" onClick={() => setImageUrl(null)} className="text-sm text-gray-400 hover:text-red-500">
+                Remove
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">SKU</label>
@@ -184,7 +230,7 @@ export function ProductForm({
 
       {error && <ErrorMessage message={error} />}
 
-      <Button type="submit" className="w-full" disabled={submitting}>
+      <Button type="submit" className="w-full" disabled={submitting || uploadImage.isPending}>
         {submitting ? "Saving..." : "Save Product"}
       </Button>
     </form>

@@ -9,10 +9,13 @@ import {
   bulkAdjustProductsBodySchema,
 } from "./validation";
 import * as controller from "./controller";
+import { uploadProductImage } from "./upload";
 
 const router = Router();
 
 router.use(authenticate);
+
+router.post("/upload-image", requireRole("ADMIN", "MANAGER"), uploadProductImage, controller.uploadImage);
 
 router.get("/import/template", requireRole("ADMIN", "MANAGER"), controller.downloadTemplate);
 router.post(

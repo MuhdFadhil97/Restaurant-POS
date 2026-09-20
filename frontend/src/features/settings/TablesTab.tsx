@@ -101,7 +101,9 @@ export function TablesTab() {
 
 function TableQrModal({ table, onClose }: { table: TableDto | null; onClose: () => void }) {
   const regenerateQr = useRegenerateTableQr();
-  const orderUrl = table?.qrToken ? `${window.location.origin}/order/${table.qrToken}` : null;
+  const orderUrl = table?.qrToken
+    ? `${import.meta.env.VITE_PUBLIC_URL || window.location.origin}/order/${table.qrToken}`
+    : null;
 
   async function handleGenerate() {
     if (!table) return;

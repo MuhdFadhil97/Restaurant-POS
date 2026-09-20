@@ -1,10 +1,60 @@
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import fs from "fs";
+import path from "path";
 
 const prisma = new PrismaClient();
 
+// Simple flat-color SVG illustrations for demo products, written directly into
+// the (gitignored) uploads folder so seeded products have a relevant image
+// without depending on any external/network image source.
+const PRODUCT_IMAGES: Record<string, string> = {
+  "iced-coffee.svg": `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+    <rect width="200" height="200" fill="#f3ede3"/>
+    <path d="M55 70h90l-10 95a12 12 0 0 1-12 11H77a12 12 0 0 1-12-11L55 70z" fill="#ffffff" stroke="#6b4a30" stroke-width="4"/>
+    <rect x="60" y="95" width="80" height="40" fill="#c9955a" opacity="0.85"/>
+    <path d="M145 78c18 2 24 20 12 32-8 8-20 9-27 6" fill="none" stroke="#6b4a30" stroke-width="4"/>
+    <rect x="45" y="58" width="110" height="14" rx="6" fill="#6b4a30"/>
+    <line x1="85" y1="70" x2="80" y2="170" stroke="#8a6a49" stroke-width="3"/>
+    <line x1="115" y1="70" x2="120" y2="170" stroke="#8a6a49" stroke-width="3"/>
+  </svg>`,
+  "club-sandwich.svg": `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+    <rect width="200" height="200" fill="#f6efe0"/>
+    <path d="M35 120h130l-15 25a10 10 0 0 1-9 5H59a10 10 0 0 1-9-5l-15-25z" fill="#e8b968"/>
+    <rect x="35" y="105" width="130" height="16" rx="4" fill="#4f8a3d"/>
+    <rect x="35" y="90" width="130" height="16" fill="#c1392b"/>
+    <rect x="35" y="75" width="130" height="16" fill="#e8b968"/>
+    <path d="M40 75l60-35 60 35z" fill="#eecb8a"/>
+    <circle cx="70" cy="150" r="4" fill="#c9955a"/>
+    <circle cx="100" cy="155" r="4" fill="#c9955a"/>
+    <circle cx="130" cy="150" r="4" fill="#c9955a"/>
+  </svg>`,
+  "blueberry-muffin.svg": `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+    <rect width="200" height="200" fill="#f6efe0"/>
+    <path d="M50 95c-10-25 15-40 50-40s60 15 50 40c10 5 12 18-2 20H52c-14-2-12-15-2-20z" fill="#e8c27a"/>
+    <path d="M45 100h110l-8 65a12 12 0 0 1-12 11H65a12 12 0 0 1-12-11l-8-65z" fill="#c9955a"/>
+    <g fill="#3d4a91">
+      <circle cx="75" cy="75" r="6"/>
+      <circle cx="100" cy="65" r="6"/>
+      <circle cx="125" cy="78" r="6"/>
+      <circle cx="88" cy="120" r="5"/>
+      <circle cx="115" cy="130" r="5"/>
+      <circle cx="70" cy="140" r="5"/>
+    </g>
+  </svg>`,
+};
+
+function seedProductImages() {
+  const dir = path.join(__dirname, "..", "uploads", "products");
+  fs.mkdirSync(dir, { recursive: true });
+  for (const [filename, svg] of Object.entries(PRODUCT_IMAGES)) {
+    fs.writeFileSync(path.join(dir, filename), svg.trim());
+  }
+}
+
 async function main() {
   console.log("Seeding database...");
+  seedProductImages();
 
   const outlet1 = await prisma.outlet.create({
     data: { name: "Downtown Cafe", address: "123 Main St", phone: "555-0100" },
@@ -85,6 +135,7 @@ async function main() {
       costPrice: 1.2,
       taxRateId: defaultTax.id,
       unitOfMeasure: "cup",
+      imageUrl: "/uploads/products/iced-coffee.svg",
       lowStockThreshold: 10,
       stationId: barStation.id,
       variants: {
@@ -106,6 +157,7 @@ async function main() {
       costPrice: 3.1,
       taxRateId: defaultTax.id,
       unitOfMeasure: "plate",
+      imageUrl: "/uploads/products/club-sandwich.svg",
       lowStockThreshold: 5,
       stationId: kitchenStation.id,
     },
@@ -120,6 +172,7 @@ async function main() {
       costPrice: 1.0,
       taxRateId: defaultTax.id,
       unitOfMeasure: "piece",
+      imageUrl: "/uploads/products/blueberry-muffin.svg",
       lowStockThreshold: 8,
       stationId: kitchenStation.id,
     },

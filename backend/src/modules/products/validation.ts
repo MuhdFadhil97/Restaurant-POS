@@ -17,7 +17,7 @@ export const createProductSchema = z.object({
   taxRateId: z.coerce.number().int().optional(),
   stationId: z.coerce.number().int().optional(),
   unitOfMeasure: z.string().min(1),
-  imageUrl: z.string().url().optional(),
+  imageUrl: z.string().min(1).optional().nullable(),
   lowStockThreshold: z.number().int().nonnegative().default(0),
   isActive: z.boolean().default(true),
   variants: z.array(variantInput).default([]),

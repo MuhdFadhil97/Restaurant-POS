@@ -19,6 +19,11 @@ export const getOne = asyncHandler(async (req: Request, res: Response) => {
   res.json(await service.getProduct(Number(req.params.id), outletId, canSeeCost(req)));
 });
 
+export const uploadImage = asyncHandler(async (req: Request, res: Response) => {
+  if (!req.file) throw ApiError.badRequest("No image file was uploaded");
+  res.status(201).json({ imageUrl: `/uploads/products/${req.file.filename}` });
+});
+
 export const create = asyncHandler(async (req: Request, res: Response) => {
   res.status(201).json(await service.createProduct(req.body));
 });

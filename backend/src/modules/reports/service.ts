@@ -1,5 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "../../lib/prisma";
+import { sqlTimestamp } from "../../lib/dateOnly";
 import {
   DiscountUsageQuery,
   EinvoiceStatusQuery,
@@ -40,7 +41,7 @@ export async function salesSummary(query: ReportQuery) {
     FROM "transactions"
     WHERE "outlet_id" = ${query.outletId}
       AND "status" IN ${COMPLETED_STATUSES}
-      AND "created_at" BETWEEN ${new Date(query.from)} AND ${new Date(query.to)}
+      AND "created_at" BETWEEN ${sqlTimestamp(new Date(query.from))} AND ${sqlTimestamp(new Date(query.to))}
     GROUP BY bucket
     ORDER BY bucket ASC
   `);
@@ -70,7 +71,7 @@ export async function topProducts(query: ReportQuery) {
     JOIN "products" p ON p."id" = ti."product_id"
     WHERE t."outlet_id" = ${query.outletId}
       AND t."status" = 'COMPLETED'
-      AND t."created_at" BETWEEN ${new Date(query.from)} AND ${new Date(query.to)}
+      AND t."created_at" BETWEEN ${sqlTimestamp(new Date(query.from))} AND ${sqlTimestamp(new Date(query.to))}
     GROUP BY p."id", p."name", p."sku"
     ORDER BY quantity_sold DESC
     LIMIT ${query.limit}
@@ -182,7 +183,7 @@ export async function slowestProductsReport(query: ReportQuery): Promise<ReportD
     JOIN "products" p ON p."id" = ti."product_id"
     WHERE t."outlet_id" = ${query.outletId}
       AND t."status" = 'COMPLETED'
-      AND t."created_at" BETWEEN ${new Date(query.from)} AND ${new Date(query.to)}
+      AND t."created_at" BETWEEN ${sqlTimestamp(new Date(query.from))} AND ${sqlTimestamp(new Date(query.to))}
     GROUP BY p."id", p."name", p."sku"
     ORDER BY quantity_sold ASC
     LIMIT ${query.limit}
@@ -265,7 +266,7 @@ async function categorySales(outletId: number, from: string, to: string, categor
     LEFT JOIN "product_categories" pc ON pc."id" = p."category_id"
     WHERE t."outlet_id" = ${outletId}
       AND t."status" = 'COMPLETED'
-      AND t."created_at" BETWEEN ${new Date(from)} AND ${new Date(to)}
+      AND t."created_at" BETWEEN ${sqlTimestamp(new Date(from))} AND ${sqlTimestamp(new Date(to))}
       ${categoryId ? Prisma.sql`AND pc."id" = ${categoryId}` : Prisma.empty}
     GROUP BY pc."id", pc."name"
     ORDER BY revenue DESC
@@ -321,7 +322,7 @@ export async function topCustomersReport(query: ReportQuery): Promise<ReportData
     JOIN "customers" c ON c."id" = t."customer_id"
     WHERE t."outlet_id" = ${query.outletId}
       AND t."status" = 'COMPLETED'
-      AND t."created_at" BETWEEN ${new Date(query.from)} AND ${new Date(query.to)}
+      AND t."created_at" BETWEEN ${sqlTimestamp(new Date(query.from))} AND ${sqlTimestamp(new Date(query.to))}
     GROUP BY c."id", c."name", c."points_balance"
     ORDER BY total_spend DESC
     LIMIT ${query.limit}
@@ -463,7 +464,7 @@ export async function taxCollectedReport(query: TaxCollectedQuery): Promise<Repo
     LEFT JOIN "tax_rates" tr ON tr."id" = p."tax_rate_id"
     WHERE t."outlet_id" = ${query.outletId}
       AND t."status" = 'COMPLETED'
-      AND t."created_at" BETWEEN ${new Date(query.from)} AND ${new Date(query.to)}
+      AND t."created_at" BETWEEN ${sqlTimestamp(new Date(query.from))} AND ${sqlTimestamp(new Date(query.to))}
     GROUP BY tr."id", tr."name", tr."rate"
     ORDER BY tax_collected DESC
   `);

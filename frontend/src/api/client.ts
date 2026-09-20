@@ -23,6 +23,13 @@ apiClient.interceptors.response.use(
   }
 );
 
+export function resolveAssetUrl(url: string | null | undefined): string | undefined {
+  if (!url) return undefined;
+  if (/^https?:\/\//.test(url)) return url;
+  const origin = apiClient.defaults.baseURL?.replace(/\/api\/?$/, "") ?? "";
+  return `${origin}${url}`;
+}
+
 export interface ApiErrorShape {
   error: { message: string; code: string; details?: unknown };
 }

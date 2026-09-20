@@ -1,6 +1,8 @@
+import { useState } from "react";
 import { Customer, Discount, TransactionOrigin } from "@/api/types";
 import { Button, Select } from "@/components/ui";
 import { money } from "./cartMath";
+import { CustomerPickerModal } from "./CustomerPickerModal";
 
 export interface CartLineView {
   key: string | number;
@@ -59,6 +61,9 @@ export function CartPanel({
   canSendToTable: boolean;
   busy: boolean;
 }) {
+  const [showCustomerPicker, setShowCustomerPicker] = useState(false);
+  const selectedCustomer = customers.find((c) => c.id === customerId) ?? null;
+
   return (
     <div className="flex flex-col h-full bg-white rounded-xl border border-gray-200 shadow-sm">
       <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
@@ -105,14 +110,23 @@ export function CartPanel({
 
       <div className="border-t border-gray-200 p-4 space-y-3">
         <div className="grid grid-cols-2 gap-2">
-          <Select value={customerId ?? ""} onChange={(e) => onCustomerChange(e.target.value ? Number(e.target.value) : null)}>
-            <option value="">Walk-in customer</option>
-            {customers.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </Select>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setShowCustomerPicker(true)}
+              className="flex-1 min-w-0 text-left px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-brand-500"
+            >
+              <p className="text-sm truncate">{selectedCustomer ? selectedCustomer.name : "Walk-in customer"}</p>
+            </button>
+            {selectedCustomer && (
+              <button
+                onClick={() => onCustomerChange(null)}
+                title="Remove customer"
+                className="text-gray-300 hover:text-red-500 text-sm px-1"
+              >
+                ✕
+              </button>
+            )}
+          </div>
           <Select value={orderDiscountId ?? ""} onChange={(e) => onOrderDiscountChange(e.target.value ? Number(e.target.value) : null)}>
             <option value="">No order discount</option>
             {discounts
@@ -152,6 +166,13 @@ export function CartPanel({
           </Button>
         </div>
       </div>
+
+      <CustomerPickerModal
+        open={showCustomerPicker}
+        onClose={() => setShowCustomerPicker(false)}
+        selectedId={customerId}
+        onSelect={onCustomerChange}
+      />
     </div>
   );
 }

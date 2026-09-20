@@ -4,6 +4,7 @@ import { useCategories, useCreateProduct, useProducts, useUpdateProduct } from "
 import { useOutlets } from "@/api/outlets";
 import { useLowStock } from "@/api/inventory";
 import { Product } from "@/api/types";
+import { resolveAssetUrl } from "@/api/client";
 import { Button, Card, Input, Modal, Select, Spinner } from "@/components/ui";
 import { money } from "@/features/pos/cartMath";
 import { ProductForm } from "./ProductForm";
@@ -170,6 +171,7 @@ export function ProductsPage() {
         <table className="w-full text-sm">
           <thead className="bg-gray-50 text-gray-500 text-left">
             <tr>
+              <th className="px-4 py-2"></th>
               <SortHeader label="SKU" column="sku" sort={sort} onSort={handleSort} />
               <SortHeader label="Name" column="name" sort={sort} onSort={handleSort} />
               <SortHeader label="Category" column="category" sort={sort} onSort={handleSort} />
@@ -182,6 +184,13 @@ export function ProductsPage() {
           <tbody className="divide-y divide-gray-100">
             {visibleProducts.map((p) => (
               <tr key={p.id} className="hover:bg-gray-50">
+                <td className="px-4 py-2">
+                  {p.imageUrl ? (
+                    <img src={resolveAssetUrl(p.imageUrl)} alt="" className="w-8 h-8 rounded object-cover border border-gray-200" />
+                  ) : (
+                    <div className="w-8 h-8 rounded border border-dashed border-gray-200" />
+                  )}
+                </td>
                 <td className="px-4 py-2">{p.sku}</td>
                 <td className="px-4 py-2">{p.name}</td>
                 <td className="px-4 py-2">{p.category?.name ?? "-"}</td>
@@ -200,7 +209,7 @@ export function ProductsPage() {
             ))}
             {visibleProducts.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-4 py-6 text-center text-gray-400">
+                <td colSpan={8} className="px-4 py-6 text-center text-gray-400">
                   No products match your search.
                 </td>
               </tr>

@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQrMenu, useSubmitQrOrder } from "@/api/qrOrder";
 import { QrMenuProduct } from "@/api/types";
-import { getErrorMessage } from "@/api/client";
+import { getErrorMessage, resolveAssetUrl } from "@/api/client";
 import { Spinner, ErrorMessage } from "@/components/ui";
 import { money } from "@/features/pos/cartMath";
 import { useQrCartStore } from "@/store/qrCartStore";
@@ -175,6 +175,15 @@ function MenuCard({
   return (
     <div className="relative bg-white rounded-xl border border-gray-200 shadow-sm p-4">
       <button onClick={handleClick} disabled={outOfStock} className="w-full text-left disabled:opacity-50">
+        {product.imageUrl ? (
+          <img
+            src={resolveAssetUrl(product.imageUrl)}
+            alt={product.name}
+            className="w-full aspect-square object-cover rounded-lg mb-2"
+          />
+        ) : (
+          <div className="w-full aspect-square rounded-lg mb-2 bg-gray-100" />
+        )}
         <p className="font-medium text-gray-900">{product.name}</p>
         <div className="flex items-center justify-between mt-2">
           <span className="font-semibold text-brand-700">{money(Number(product.unitPrice))}</span>

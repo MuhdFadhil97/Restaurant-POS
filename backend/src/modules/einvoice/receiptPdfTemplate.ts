@@ -22,10 +22,12 @@ function money(value: unknown): string {
 // e-receipt matches what was printed at checkout, minus the QR (the customer
 // already scanned it to reach this download).
 export function renderReceiptHtml(transaction: PdfReceiptTransaction): string {
+  const totalItems = transaction.items.reduce((sum, item) => sum + item.quantity, 0);
+
   const itemRows = transaction.items
     .map((item, index) => {
-      const name = `${item.quantity}x ${escapeHtml(item.product.name)}${item.variant ? ` (${escapeHtml(item.variant.value)})` : ""}`;
-      return `<div class="row"><span class="no">${index + 1}.</span><span class="name">${name}</span><span class="amt">${money(item.lineTotal)}</span></div>`;
+      const name = `${escapeHtml(item.product.name)}${item.variant ? ` (${escapeHtml(item.variant.value)})` : ""}`;
+      return `<div class="row"><span class="no">${index + 1}.</span><span class="name">${name}</span><span class="qty">${item.quantity}</span><span class="amt">${money(item.lineTotal)}</span></div>`;
     })
     .join("");
 
@@ -52,8 +54,10 @@ export function renderReceiptHtml(transaction: PdfReceiptTransaction): string {
   .row { display: flex; justify-content: space-between; gap: 8px; font-size: 11px; margin-bottom: 3px; }
   .row .no { width: 16px; flex-shrink: 0; }
   .row .name { flex: 1; }
+  .row .qty { width: 24px; flex-shrink: 0; text-align: center; }
   .row .amt { flex-shrink: 0; }
   .head-row { display: flex; justify-content: space-between; font-size: 11px; font-weight: 700; margin-bottom: 3px; }
+  .head-row .qty { width: 24px; flex-shrink: 0; text-align: center; }
   .totals .row { font-size: 11px; }
   .totals .grand { font-weight: 700; font-size: 13px; padding-top: 4px; }
   .ref { text-align: right; font-size: 9px; color: #555; margin: -2px 0 4px; }
@@ -73,10 +77,11 @@ export function renderReceiptHtml(transaction: PdfReceiptTransaction): string {
     ${transaction.cashier ? `<p class="small">Cashier: ${escapeHtml(transaction.cashier.name)}</p>` : ""}
   </div>
   <hr />
-  <div class="head-row"><span class="no">No.</span><span class="name">Products</span><span>Price (RM)</span></div>
+  <div class="head-row"><span class="no">No.</span><span class="name">Item</span><span class="qty">Qty</span><span>Price (RM)</span></div>
   ${itemRows}
   <hr />
   <div class="totals">
+    <div class="row"><span>Total Items</span><span>${totalItems}</span></div>
     <div class="row"><span>Subtotal</span><span>${money(transaction.subtotal)}</span></div>
     <div class="row"><span>Discount</span><span>-${money(transaction.discountTotal)}</span></div>
     ${Number(transaction.serviceChargeTotal) > 0 ? `<div class="row"><span>Service Charge</span><span>${money(transaction.serviceChargeTotal)}</span></div>` : ""}

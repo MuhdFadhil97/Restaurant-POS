@@ -16,6 +16,7 @@ import {
   ChevronRightIcon,
   ClockIcon,
   CogIcon,
+  DashboardIcon,
   LogoutIcon,
   ReceiptIcon,
   UsersIcon,
@@ -23,6 +24,7 @@ import {
 } from "@/components/icons";
 
 const navItems = [
+  { to: "/dashboard", label: "Dashboard", icon: DashboardIcon, roles: ["ADMIN", "MANAGER"] },
   { to: "/pos", label: "POS", icon: CartIcon, roles: ["ADMIN", "MANAGER", "CASHIER"] },
   { to: "/transactions", label: "Transactions", icon: ReceiptIcon, roles: ["ADMIN", "MANAGER", "CASHIER"] },
   { to: "/kds", label: "Kitchen", icon: ChefHatIcon, roles: ["ADMIN", "MANAGER", "CASHIER", "KITCHEN"] },

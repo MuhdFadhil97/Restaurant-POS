@@ -19,6 +19,7 @@ export function Receipt({ transaction }: { transaction: TransactionDto }) {
         )}
         <p className="text-xs">{new Date(transaction.createdAt).toLocaleString()}</p>
         <p className="text-xs">Receipt #{transaction.receiptNumber ?? transaction.id}</p>
+        {transaction.cashier?.name && <p className="text-xs">Cashier: {transaction.cashier.name}</p>}
       </div>
       <hr className="border-dashed my-2" />
       <div className="flex justify-between text-xs font-bold mb-1">
@@ -63,9 +64,14 @@ export function Receipt({ transaction }: { transaction: TransactionDto }) {
       </div>
       <hr className="border-dashed my-2" />
       {transaction.payments.map((p) => (
-        <div key={p.id} className="flex justify-between text-xs">
-          <span>{p.method}</span>
-          <span>{money(Number(p.amount))}</span>
+        <div key={p.id} className="text-xs">
+          <div className="flex justify-between">
+            <span>{p.method}</span>
+            <span>{money(Number(p.amount))}</span>
+          </div>
+          {p.method === "CARD" && p.reference && (
+            <div className="text-right text-[10px] text-gray-500">{p.reference}</div>
+          )}
         </div>
       ))}
       {transaction.einvoiceStatus === "GENERATED" && transaction.einvoiceUuid && transaction.einvoiceLongId && (
@@ -74,7 +80,7 @@ export function Receipt({ transaction }: { transaction: TransactionDto }) {
           <div className="flex flex-col items-center gap-1 text-center">
             <p className="text-[10px] font-semibold">Malaysia e-Invoice</p>
             <QRCodeSVG
-              value={`https://myinvois.hasil.gov.my/${transaction.einvoiceUuid}/share/${transaction.einvoiceLongId}`}
+              value={`${import.meta.env.VITE_PUBLIC_URL || window.location.origin}/einvoice/${transaction.einvoiceUuid}/share/${transaction.einvoiceLongId}`}
               size={96}
             />
             <p className="text-[9px] text-gray-500">Scan to validate</p>

@@ -138,22 +138,37 @@ function UserFormModal({
   return (
     <Modal open={open} onClose={onClose} title={title}>
       <form onSubmit={handleSubmit} className="space-y-3">
-        <Input placeholder="Full name" value={name} onChange={(e) => setName(e.target.value)} required />
-        <Input placeholder="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-        <Input placeholder="Username" value={username} onChange={(e) => setUsername(e.target.value)} required />
-        <Input
-          placeholder={initial ? "New password (leave blank to keep)" : "Password"}
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required={!initial}
-        />
-        <Select value={role} onChange={(e) => setRole(e.target.value as Role)}>
-          <option value="ADMIN">Admin</option>
-          <option value="MANAGER">Manager</option>
-          <option value="CASHIER">Cashier</option>
-          <option value="KITCHEN">Kitchen</option>
-        </Select>
+        <div>
+          <label className="block text-xs text-gray-500 mb-1">Full name</label>
+          <Input placeholder="Full name" value={name} onChange={(e) => setName(e.target.value)} required />
+        </div>
+        <div>
+          <label className="block text-xs text-gray-500 mb-1">Email</label>
+          <Input placeholder="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+        </div>
+        <div>
+          <label className="block text-xs text-gray-500 mb-1">Username</label>
+          <Input placeholder="Username" value={username} onChange={(e) => setUsername(e.target.value)} required />
+        </div>
+        <div>
+          <label className="block text-xs text-gray-500 mb-1">{initial ? "New password" : "Password"}</label>
+          <Input
+            placeholder={initial ? "Leave blank to keep current password" : "Password"}
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required={!initial}
+          />
+        </div>
+        <div>
+          <label className="block text-xs text-gray-500 mb-1">Role</label>
+          <Select value={role} onChange={(e) => setRole(e.target.value as Role)}>
+            <option value="ADMIN">Admin</option>
+            <option value="MANAGER">Manager</option>
+            <option value="CASHIER">Cashier</option>
+            <option value="KITCHEN">Kitchen</option>
+          </Select>
+        </div>
         <div>
           <p className="text-sm font-medium text-gray-700 mb-1">Outlet Access</p>
           <div className="space-y-1">

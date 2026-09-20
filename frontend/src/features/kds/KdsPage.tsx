@@ -74,7 +74,10 @@ function KdsCard({ item, onAdvance }: { item: KdsQueueItem; onAdvance: (status: 
     <Card className="p-4 flex flex-col gap-2">
       <div className="flex items-center justify-between">
         <span className="font-semibold">{tableName ?? "Takeaway"}</span>
-        <Badge color={statusColor[status]}>{status}</Badge>
+        <div className="flex items-center gap-1">
+          {item.transaction.origin === "QR" && <Badge color="purple">QR</Badge>}
+          <Badge color={statusColor[status]}>{status}</Badge>
+        </div>
       </div>
       <p className="text-lg font-medium">
         {item.quantity}x {item.product.name}

@@ -168,18 +168,36 @@ function DiscountFormModal({
   return (
     <Modal open={open} onClose={onClose} title={title}>
       <form onSubmit={handleSubmit} className="grid grid-cols-3 gap-2">
-        <Input placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} required />
-        <Select value={type} onChange={(e) => setType(e.target.value as DiscountType)}>
-          <option value="PERCENTAGE">Percentage</option>
-          <option value="FIXED">Fixed amount</option>
-        </Select>
-        <Select value={scope} onChange={(e) => setScope(e.target.value as DiscountScope)}>
-          <option value="ORDER">Order-level</option>
-          <option value="LINE">Line-level</option>
-        </Select>
-        <Input placeholder="Value" type="number" step="0.01" value={value} onChange={(e) => setValue(e.target.value)} required />
-        <Input placeholder="Min spend (optional)" type="number" step="0.01" value={minSpend} onChange={(e) => setMinSpend(e.target.value)} />
-        <Input placeholder="Usage limit (optional)" type="number" value={usageLimit} onChange={(e) => setUsageLimit(e.target.value)} />
+        <div>
+          <label className="block text-xs text-gray-500 mb-1">Name</label>
+          <Input placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} required />
+        </div>
+        <div>
+          <label className="block text-xs text-gray-500 mb-1">Type</label>
+          <Select value={type} onChange={(e) => setType(e.target.value as DiscountType)}>
+            <option value="PERCENTAGE">Percentage</option>
+            <option value="FIXED">Fixed amount</option>
+          </Select>
+        </div>
+        <div>
+          <label className="block text-xs text-gray-500 mb-1">Scope</label>
+          <Select value={scope} onChange={(e) => setScope(e.target.value as DiscountScope)}>
+            <option value="ORDER">Order-level</option>
+            <option value="LINE">Line-level</option>
+          </Select>
+        </div>
+        <div>
+          <label className="block text-xs text-gray-500 mb-1">Value</label>
+          <Input placeholder="Value" type="number" step="0.01" value={value} onChange={(e) => setValue(e.target.value)} required />
+        </div>
+        <div>
+          <label className="block text-xs text-gray-500 mb-1">Min spend (optional)</label>
+          <Input placeholder="Min spend (optional)" type="number" step="0.01" value={minSpend} onChange={(e) => setMinSpend(e.target.value)} />
+        </div>
+        <div>
+          <label className="block text-xs text-gray-500 mb-1">Usage limit (optional)</label>
+          <Input placeholder="Usage limit (optional)" type="number" value={usageLimit} onChange={(e) => setUsageLimit(e.target.value)} />
+        </div>
         <div>
           <label className="block text-xs text-gray-500 mb-1">Start date (optional)</label>
           <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />

@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useOutletStore } from "@/store/outletStore";
 import { useCategories, useCreateProduct, useProducts, useUpdateProduct } from "@/api/products";
+import { useOutlets } from "@/api/outlets";
 import { useLowStock } from "@/api/inventory";
 import { Product } from "@/api/types";
 import { Button, Card, Input, Modal, Select, Spinner } from "@/components/ui";
@@ -9,6 +10,7 @@ import { ProductForm } from "./ProductForm";
 import { StockAdjustmentModal } from "./StockAdjustmentModal";
 import { ImportProductsModal } from "./ImportProductsModal";
 import { BulkAdjustmentModal } from "./BulkAdjustmentModal";
+import { downloadProductsCsv } from "./exportCsv";
 
 type SortColumn = "sku" | "name" | "category" | "stock";
 type SortDirection = "asc" | "desc";
@@ -42,6 +44,7 @@ export function ProductsPage() {
   const outletId = useOutletStore((s) => s.activeOutletId);
   const { data: products, isLoading } = useProducts(outletId ?? undefined);
   const { data: categories } = useCategories();
+  const { data: outlets } = useOutlets();
   const { data: lowStock } = useLowStock(outletId ?? undefined);
   const createProduct = useCreateProduct();
   const updateProduct = useUpdateProduct();
@@ -115,6 +118,13 @@ export function ProductsPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">Products</h1>
         <div className="flex gap-2">
+          <Button
+            variant="secondary"
+            onClick={() => downloadProductsCsv(visibleProducts, outlets?.find((o) => o.id === outletId)?.name ?? "outlet")}
+            disabled={visibleProducts.length === 0}
+          >
+            Export CSV
+          </Button>
           <Button variant="secondary" onClick={() => setShowImport(true)}>
             Import Products
           </Button>

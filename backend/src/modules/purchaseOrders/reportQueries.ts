@@ -10,23 +10,20 @@ export async function poSummaryReport(query: ReportQuery): Promise<ReportData> {
     orderBy: { createdAt: "desc" },
   });
 
-  const rows = orders.map((po) => {
-    const orderValue = po.items.reduce((sum, i) => sum + i.quantityOrdered * Number(i.unitCost), 0);
-    return {
-      poId: po.id,
-      supplierName: po.supplier.name,
-      status: po.status,
-      itemCount: po.items.length,
-      orderValue,
-      orderedAt: po.orderedAt?.toISOString() ?? "",
-      receivedAt: po.receivedAt?.toISOString() ?? "",
-    };
-  });
+  const rows = orders.map((po) => ({
+    poNumber: po.poNumber,
+    supplierName: po.supplier.name,
+    status: po.status,
+    itemCount: po.items.length,
+    orderValue: Number(po.total),
+    orderedAt: po.orderedAt?.toISOString() ?? "",
+    receivedAt: po.receivedAt?.toISOString() ?? "",
+  }));
 
   return {
     title: "Purchase Orders Summary",
     columns: [
-      { key: "poId", header: "PO #", format: "number" },
+      { key: "poNumber", header: "PO #" },
       { key: "supplierName", header: "Supplier" },
       { key: "status", header: "Status" },
       { key: "itemCount", header: "Line Items", format: "number" },

@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AppLayout } from "@/layouts/AppLayout";
 import { LoginPage } from "@/features/auth/LoginPage";
+import { DashboardPage } from "@/features/dashboard/DashboardPage";
 import { PosPage } from "@/features/pos/PosPage";
 import { TransactionsPage } from "@/features/transactions/TransactionsPage";
 import { ProductsPage } from "@/features/products/ProductsPage";
@@ -12,11 +13,17 @@ import { SettingsPage } from "@/features/settings/SettingsPage";
 import { KdsPage } from "@/features/kds/KdsPage";
 import { AttendancePage } from "@/features/attendance/AttendancePage";
 import { ShiftManagementPage } from "@/features/shiftManagement/ShiftManagementPage";
+import { QrMenuPage } from "@/features/qrOrder/QrMenuPage";
+import { QrOrderStatusPage } from "@/features/qrOrder/QrOrderStatusPage";
+import { EInvoiceVerifyPage } from "@/features/einvoice/EInvoiceVerifyPage";
 
 export function App() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/order/:token" element={<QrMenuPage />} />
+      <Route path="/order/:token/status" element={<QrOrderStatusPage />} />
+      <Route path="/einvoice/:uuid/share/:longId" element={<EInvoiceVerifyPage />} />
 
       <Route element={<ProtectedRoute />}>
         <Route element={<AppLayout />}>
@@ -32,6 +39,7 @@ export function App() {
           </Route>
 
           <Route element={<ProtectedRoute roles={["ADMIN", "MANAGER"]} />}>
+            <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/products" element={<ProductsPage />} />
             <Route path="/inventory" element={<InventoryPage />} />
             <Route path="/reports" element={<ReportsPage />} />

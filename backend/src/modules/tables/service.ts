@@ -1,13 +1,19 @@
+import crypto from "node:crypto";
 import { Prisma } from "@prisma/client";
 import { prisma } from "../../lib/prisma";
 import { ApiError } from "../../lib/apiError";
 import { CreateTableInput, SaveLayoutInput, UpdateTableInput } from "./validation";
 
 export async function listTables(outletId: number) {
-  return prisma.table.findMany({
+  const tables = await prisma.table.findMany({
     where: { outletId, deletedAt: null },
+    include: { transactions: { where: { status: "OPEN" }, take: 1, select: { id: true, origin: true } } },
     orderBy: { name: "asc" },
   });
+  return tables.map(({ transactions, ...table }) => ({
+    ...table,
+    activeOrder: transactions[0] ?? null,
+  }));
 }
 
 export async function createTable(input: CreateTableInput) {
@@ -45,6 +51,28 @@ export async function saveLayout(outletId: number, tables: SaveLayoutInput["tabl
       })
     )
   );
+}
+
+// Generates (or rotates) the table's QR self-order token. Serves both the
+// first "Generate" click and a later "Regenerate" — regenerating overwrites
+// the column, so the old QR immediately stops resolving.
+export async function generateQrToken(id: number) {
+  const existing = await prisma.table.findFirst({ where: { id, deletedAt: null } });
+  if (!existing) throw ApiError.notFound("Table not found");
+
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const qrToken = crypto.randomBytes(18).toString("base64url");
+    try {
+      return await prisma.table.update({
+        where: { id },
+        data: { qrToken, qrTokenRotatedAt: new Date() },
+      });
+    } catch (err) {
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") continue;
+      throw err;
+    }
+  }
+  throw ApiError.conflict("Could not generate a unique QR token, please try again");
 }
 
 export async function deleteTable(id: number) {

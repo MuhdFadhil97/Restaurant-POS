@@ -138,6 +138,71 @@ export async function createDraft(cashierId: number, input: CreateDraftInput) {
   });
 }
 
+// Customer QR self-order entry point. Finds the table's current open tab and
+// appends to it, or opens a new one attributed to the QR system user.
+// Row-locks the table (via the same OCCUPIED update createDraft performs)
+// for the whole find-or-create, so two phones submitting for the same table
+// at once serialize instead of racing into two separate OPEN transactions.
+export async function createOrAppendQrOrder(
+  outletId: number,
+  tableId: number,
+  items: { productId: number; variantId?: number; quantity: number }[],
+  systemCashierId: number
+) {
+  return prisma.$transaction(async (tx) => {
+    const table = await tx.table.findFirst({ where: { id: tableId, outletId, deletedAt: null } });
+    if (!table) throw ApiError.notFound("Table not found");
+    if (table.status === "NOT_AVAILABLE") {
+      throw ApiError.badRequest("Table is not available");
+    }
+    await tx.table.update({ where: { id: tableId }, data: { status: "OCCUPIED" } });
+
+    const existing = await tx.transaction.findFirst({
+      where: { tableId, status: "OPEN" },
+      orderBy: { createdAt: "desc" },
+    });
+
+    let transactionId: number;
+    if (existing) {
+      transactionId = existing.id;
+      for (const item of items) {
+        await tx.transactionItem.create({
+          data: {
+            transactionId,
+            productId: item.productId,
+            variantId: item.variantId,
+            quantity: item.quantity,
+            unitPrice: 0,
+            lineTotal: 0,
+          },
+        });
+      }
+    } else {
+      const created = await tx.transaction.create({
+        data: {
+          outletId,
+          tableId,
+          cashierId: systemCashierId,
+          status: "OPEN",
+          origin: "QR",
+          items: {
+            create: items.map((item) => ({
+              productId: item.productId,
+              variantId: item.variantId,
+              quantity: item.quantity,
+              unitPrice: 0,
+              lineTotal: 0,
+            })),
+          },
+        },
+      });
+      transactionId = created.id;
+    }
+
+    return recalculate(tx, transactionId);
+  });
+}
+
 export async function addItem(transactionId: number, input: AddItemInput) {
   return prisma.$transaction(async (tx) => {
     await ensureMutable(tx, transactionId);

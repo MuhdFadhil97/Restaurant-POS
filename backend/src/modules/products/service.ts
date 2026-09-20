@@ -105,6 +105,7 @@ export interface ImportPreviewRow {
   action: ImportRowAction;
   note?: string;
   error?: string;
+  data: Record<string, string>;
 }
 
 export interface ImportPreview {
@@ -233,6 +234,7 @@ export async function previewImportProducts(
         name: raw.name,
         action: "invalid",
         error: parsed.error.issues.map((e) => e.message).join("; "),
+        data: raw,
       });
       continue;
     }
@@ -255,6 +257,7 @@ export async function previewImportProducts(
         name: data.name,
         action,
         note: resolved.categoryWillCreate ? `New category "${data.category}" will be created` : undefined,
+        data: raw,
       });
     } catch (err) {
       preview.invalid++;
@@ -264,6 +267,7 @@ export async function previewImportProducts(
         name: data.name,
         action: "invalid",
         error: err instanceof Error ? err.message : "Unknown error",
+        data: raw,
       });
     }
   }

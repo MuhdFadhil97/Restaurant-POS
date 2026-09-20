@@ -42,7 +42,12 @@ export function TableStrip({
                 : "bg-white text-gray-700 border-gray-200"
             }`}
           >
-            <span>{table.name}</span>
+            <span className="flex items-center gap-1">
+              {table.name}
+              {table.activeOrder?.origin === "QR" && (
+                <span className="text-[9px] bg-purple-100 text-purple-700 px-1 rounded">QR</span>
+              )}
+            </span>
             <span className="text-[10px] opacity-75">
               {table.status === "NOT_AVAILABLE" ? "NOT AVAILABLE" : table.status}
             </span>

@@ -144,11 +144,26 @@ function OutletFormModal({
   return (
     <Modal open={open} onClose={onClose} title={title}>
       <form onSubmit={handleSubmit} className="space-y-3">
-        <Input placeholder="Outlet name" value={name} onChange={(e) => setName(e.target.value)} required />
-        <Input placeholder="Address" value={address} onChange={(e) => setAddress(e.target.value)} />
-        <Input placeholder="Phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
-        <Input placeholder="Receipt logo URL" value={receiptLogoUrl} onChange={(e) => setReceiptLogoUrl(e.target.value)} />
-        <Input placeholder="Receipt footer text" value={receiptFooter} onChange={(e) => setReceiptFooter(e.target.value)} />
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Outlet Name</label>
+          <Input value={name} onChange={(e) => setName(e.target.value)} required />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
+          <Input value={address} onChange={(e) => setAddress(e.target.value)} />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+          <Input value={phone} onChange={(e) => setPhone(e.target.value)} />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Receipt Logo URL</label>
+          <Input value={receiptLogoUrl} onChange={(e) => setReceiptLogoUrl(e.target.value)} />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Receipt Footer Text</label>
+          <Input value={receiptFooter} onChange={(e) => setReceiptFooter(e.target.value)} />
+        </div>
         <div className="space-y-2 border-t border-gray-100 pt-3">
           <label className="flex items-center gap-2 text-sm">
             <input
@@ -159,31 +174,37 @@ function OutletFormModal({
             Charge a service charge at checkout
           </label>
           {serviceChargeEnabled && (
-            <Input
-              placeholder="Service charge %"
-              type="number"
-              min={0}
-              max={100}
-              step="0.01"
-              value={serviceChargeRate}
-              onChange={(e) => setServiceChargeRate(e.target.value)}
-            />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Service Charge %</label>
+              <Input
+                type="number"
+                min={0}
+                max={100}
+                step="0.01"
+                value={serviceChargeRate}
+                onChange={(e) => setServiceChargeRate(e.target.value)}
+              />
+            </div>
           )}
         </div>
         <div className="space-y-2 border-t border-gray-100 pt-3">
           <p className="text-sm font-medium text-gray-700">e-Invoice (LHDN MyInvois)</p>
-          <Input placeholder="Tax Identification No. (TIN)" value={einvoiceTin} onChange={(e) => setEinvoiceTin(e.target.value)} />
-          <Input
-            placeholder="Business Registration No. (SSM)"
-            value={einvoiceBrn}
-            onChange={(e) => setEinvoiceBrn(e.target.value)}
-          />
-          <Input placeholder="MSIC code (5 digits)" value={einvoiceMsicCode} onChange={(e) => setEinvoiceMsicCode(e.target.value)} />
-          <Input
-            placeholder="SST registration no."
-            value={einvoiceSstNo}
-            onChange={(e) => setEinvoiceSstNo(e.target.value)}
-          />
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Tax Identification No. (TIN)</label>
+            <Input value={einvoiceTin} onChange={(e) => setEinvoiceTin(e.target.value)} />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Business Registration No. (SSM)</label>
+            <Input value={einvoiceBrn} onChange={(e) => setEinvoiceBrn(e.target.value)} />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">MSIC Code (5 digits)</label>
+            <Input value={einvoiceMsicCode} onChange={(e) => setEinvoiceMsicCode(e.target.value)} />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">SST Registration No.</label>
+            <Input value={einvoiceSstNo} onChange={(e) => setEinvoiceSstNo(e.target.value)} />
+          </div>
         </div>
         <Button type="submit" className="w-full" disabled={submitting}>
           Save

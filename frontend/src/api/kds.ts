@@ -1,9 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "./client";
-import { PrepStatus, TableDto, TransactionItemDto } from "./types";
+import { PrepStatus, TableDto, TransactionItemDto, TransactionOrigin } from "./types";
 
 export interface KdsQueueItem extends TransactionItemDto {
-  transaction: { id: number; table: TableDto | null };
+  transaction: { id: number; table: TableDto | null; origin: TransactionOrigin };
 }
 
 export function useKdsQueue(outletId?: number, stationId?: number) {

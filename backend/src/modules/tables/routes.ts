@@ -19,6 +19,7 @@ router.patch(
   controller.saveLayout
 );
 router.patch("/:id", validate({ body: updateTableSchema }), controller.update);
+router.post("/:id/qr-token", requireRole("ADMIN", "MANAGER"), controller.regenerateQrToken);
 router.delete("/:id", requireRole("ADMIN", "MANAGER"), controller.remove);
 
 export default router;

@@ -33,6 +33,8 @@ export function PaymentModal({
 }) {
   const [payments, setPayments] = useState<PendingPayment[]>([{ method: "CASH", amount: total }]);
   const [giftCardStatus, setGiftCardStatus] = useState<Record<number, string>>({});
+  const [cardBrand, setCardBrand] = useState<Record<number, string>>({});
+  const [cardLast4, setCardLast4] = useState<Record<number, string>>({});
 
   // The modal stays mounted while hidden, so re-seed the default payment
   // amount each time it opens (the cart total may have changed since the
@@ -41,6 +43,8 @@ export function PaymentModal({
     if (open) {
       setPayments([{ method: "CASH", amount: round2(total) }]);
       setGiftCardStatus({});
+      setCardBrand({});
+      setCardLast4({});
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
@@ -64,6 +68,25 @@ export function PaymentModal({
       delete next[i];
       return next;
     });
+    setCardBrand((prev) => {
+      const next = { ...prev };
+      delete next[i];
+      return next;
+    });
+    setCardLast4((prev) => {
+      const next = { ...prev };
+      delete next[i];
+      return next;
+    });
+  }
+
+  function updateCardDetails(i: number, patch: { brand?: string; last4?: string }) {
+    const brand = patch.brand ?? cardBrand[i] ?? "";
+    const last4 = patch.last4 ?? cardLast4[i] ?? "";
+    if (patch.brand !== undefined) setCardBrand((prev) => ({ ...prev, [i]: patch.brand! }));
+    if (patch.last4 !== undefined) setCardLast4((prev) => ({ ...prev, [i]: patch.last4! }));
+    const reference = brand && last4.length === 4 ? `${brand} •••• ${last4}` : undefined;
+    updatePayment(i, { reference });
   }
 
   async function checkGiftCard(i: number, code: string) {
@@ -95,7 +118,12 @@ export function PaymentModal({
               <div className="flex gap-2 items-center">
                 <Select
                   value={p.method}
-                  onChange={(e) => updatePayment(i, { method: e.target.value as PaymentMethod, reference: undefined })}
+                  onChange={(e) => {
+                    const method = e.target.value as PaymentMethod;
+                    updatePayment(i, { method, reference: undefined });
+                    setCardBrand((prev) => ({ ...prev, [i]: "Visa" }));
+                    setCardLast4((prev) => ({ ...prev, [i]: "" }));
+                  }}
                   className="w-32"
                 >
                   <option value="CASH">Cash</option>
@@ -117,6 +145,28 @@ export function PaymentModal({
                   </button>
                 )}
               </div>
+              {p.method === "CARD" && (
+                <div className="flex gap-2 items-center pl-1">
+                  <Select
+                    value={cardBrand[i] ?? "Visa"}
+                    onChange={(e) => updateCardDetails(i, { brand: e.target.value })}
+                    className="w-28 text-sm"
+                  >
+                    <option value="Visa">Visa</option>
+                    <option value="Mastercard">Mastercard</option>
+                    <option value="Amex">Amex</option>
+                    <option value="Other">Other</option>
+                  </Select>
+                  <Input
+                    placeholder="Last 4 digits"
+                    inputMode="numeric"
+                    maxLength={4}
+                    value={cardLast4[i] ?? ""}
+                    onChange={(e) => updateCardDetails(i, { last4: e.target.value.replace(/\D/g, "").slice(0, 4) })}
+                    className="text-sm"
+                  />
+                </div>
+              )}
               {p.method === "GIFT_CARD" && (
                 <div className="flex gap-2 items-center pl-1">
                   <Input

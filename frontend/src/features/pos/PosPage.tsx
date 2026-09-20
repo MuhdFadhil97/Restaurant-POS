@@ -321,6 +321,7 @@ export function PosPage() {
             lines={lines}
             totals={totals}
             tableName={selectedTable?.name}
+            orderOrigin={resumingTx?.origin}
             customers={customers ?? []}
             customerId={customerId}
             onCustomerChange={handleCustomerChange}

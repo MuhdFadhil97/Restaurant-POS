@@ -30,22 +30,45 @@ export async function getStockTake(id: number) {
 // Snapshots current stock for every product at the outlet into a count
 // sheet — the count sheet's systemQuantity is fixed at this moment, so later
 // sales/adjustments during the count don't move the target underneath staff.
+//
+// Builds the sheet from every product (and variant), not just ones that
+// already have a ProductStock row: a ProductStock row is only ever created
+// lazily on the first movement at that outlet (GRN, sale, adjustment, ...),
+// so freshly-imported products with no movement yet have none — omitting
+// them here would silently drop every just-imported product from the count.
 export async function startStockTake(userId: number, input: StartStockTakeInput) {
+  const products = await prisma.product.findMany({
+    where: { deletedAt: null },
+    include: { variants: { where: { deletedAt: null } } },
+  });
+  if (products.length === 0) throw ApiError.badRequest("There are no products to count");
+
   const stocks = await prisma.productStock.findMany({ where: { outletId: input.outletId } });
-  if (stocks.length === 0) throw ApiError.badRequest("This outlet has no stock records to count");
+  const quantityByKey = new Map(stocks.map((s) => [`${s.productId}:${s.variantId ?? ""}`, s.quantity]));
+
+  const items: { productId: number; variantId: number | null; systemQuantity: number }[] = products.flatMap(
+    (product) =>
+      product.variants.length > 0
+        ? product.variants.map((variant) => ({
+            productId: product.id,
+            variantId: variant.id as number | null,
+            systemQuantity: quantityByKey.get(`${product.id}:${variant.id}`) ?? 0,
+          }))
+        : [
+            {
+              productId: product.id,
+              variantId: null as number | null,
+              systemQuantity: quantityByKey.get(`${product.id}:`) ?? 0,
+            },
+          ]
+  );
 
   return prisma.stockTake.create({
     data: {
       outletId: input.outletId,
       startedByUserId: userId,
       notes: input.notes,
-      items: {
-        create: stocks.map((s) => ({
-          productId: s.productId,
-          variantId: s.variantId,
-          systemQuantity: s.quantity,
-        })),
-      },
+      items: { create: items },
     },
     include: detailInclude,
   });

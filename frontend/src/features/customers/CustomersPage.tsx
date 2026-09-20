@@ -7,8 +7,14 @@ import {
   useUpdateCustomer,
 } from "@/api/customers";
 import { Customer, CustomerSource } from "@/api/types";
-import { Button, Card, Input, Modal, Select, Spinner } from "@/components/ui";
+import { Badge, Button, Card, Input, Modal, Select, Spinner } from "@/components/ui";
 import { money } from "@/features/pos/cartMath";
+import { TransactionDetailModal } from "@/features/transactions/TransactionDetailModal";
+
+const historyStatusColor: Record<string, "green" | "red"> = {
+  COMPLETED: "green",
+  REFUNDED: "red",
+};
 
 const sourceLabel: Record<CustomerSource, string> = {
   WALK_IN: "Walk-In",
@@ -225,22 +231,57 @@ function CustomerFormModal({
 
 function CustomerHistoryModal({ customer, onClose }: { customer: Customer | null; onClose: () => void }) {
   const { data: history, isLoading } = useCustomerHistory(customer?.id);
+  const [selectedTransactionId, setSelectedTransactionId] = useState<number | null>(null);
+
   return (
-    <Modal open={!!customer} onClose={onClose} title={`Purchase History — ${customer?.name ?? ""}`}>
-      {isLoading ? (
-        <Spinner />
-      ) : history && history.length > 0 ? (
-        <div className="space-y-2">
-          {history.map((t) => (
-            <div key={t.id} className="flex justify-between text-sm border-b border-gray-100 pb-2">
-              <span>{new Date(t.createdAt).toLocaleDateString()}</span>
-              <span className="font-medium">{money(Number(t.total))}</span>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <p className="text-sm text-gray-400">No purchases yet.</p>
-      )}
-    </Modal>
+    <>
+      <Modal open={!!customer} onClose={onClose} title={`Purchase History — ${customer?.name ?? ""}`}>
+        {isLoading ? (
+          <Spinner />
+        ) : (
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50 text-gray-500 text-left">
+              <tr>
+                <th className="px-3 py-2">Date</th>
+                <th className="px-3 py-2">Receipt No</th>
+                <th className="px-3 py-2">Items</th>
+                <th className="px-3 py-2">Total</th>
+                <th className="px-3 py-2">Status</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {history?.map((t) => (
+                <tr
+                  key={t.id}
+                  className="hover:bg-gray-50 cursor-pointer"
+                  onClick={() => setSelectedTransactionId(t.id)}
+                >
+                  <td className="px-3 py-2">{new Date(t.createdAt).toLocaleDateString()}</td>
+                  <td className="px-3 py-2 font-mono text-xs text-brand-600 hover:underline">
+                    {t.receiptNumber ?? "-"}
+                  </td>
+                  <td className="px-3 py-2">{t.items?.length ?? "-"}</td>
+                  <td className="px-3 py-2 font-medium">{money(Number(t.total))}</td>
+                  <td className="px-3 py-2">
+                    <Badge color={historyStatusColor[t.status] ?? "gray"}>{t.status}</Badge>
+                  </td>
+                </tr>
+              ))}
+              {history?.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="px-3 py-8 text-center text-gray-400">
+                    No purchases yet.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        )}
+      </Modal>
+      <TransactionDetailModal
+        transactionId={selectedTransactionId}
+        onClose={() => setSelectedTransactionId(null)}
+      />
+    </>
   );
 }

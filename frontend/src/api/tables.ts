@@ -49,6 +49,14 @@ export function useDeleteTable() {
   });
 }
 
+export function useRegenerateTableQr() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: number) => (await apiClient.post<TableDto>(`/tables/${id}/qr-token`)).data,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["tables"] }),
+  });
+}
+
 export function useSaveTableLayout() {
   const qc = useQueryClient();
   return useMutation({

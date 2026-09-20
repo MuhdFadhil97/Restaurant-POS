@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useState } from "react";
+import { QRCodeSVG } from "qrcode.react";
 import { useOutletStore } from "@/store/outletStore";
-import { useCreateTable, useDeleteTable, useTables, useUpdateTable } from "@/api/tables";
+import { useCreateTable, useDeleteTable, useRegenerateTableQr, useTables, useUpdateTable } from "@/api/tables";
 import { TableDto } from "@/api/types";
 import { Badge, Button, Card, Input, Modal, Select } from "@/components/ui";
 
@@ -13,6 +14,10 @@ export function TablesTab() {
 
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<TableDto | null>(null);
+  const [showingQrId, setShowingQrId] = useState<number | null>(null);
+  // Re-derived from the live query (rather than a snapshot) so the modal
+  // reflects a freshly regenerated token without needing to be reopened.
+  const showingQr = tables?.find((t) => t.id === showingQrId) ?? null;
 
   async function handleDelete(table: TableDto) {
     if (!window.confirm(`Remove table "${table.name}"?`)) return;
@@ -48,6 +53,9 @@ export function TablesTab() {
               </Badge>
               <button onClick={() => setEditing(t)} className="text-xs text-brand-600 hover:underline">
                 Edit
+              </button>
+              <button onClick={() => setShowingQrId(t.id)} className="text-xs text-brand-600 hover:underline">
+                QR
               </button>
               <button onClick={() => handleDelete(t)} className="text-xs text-red-500 hover:underline">
                 Delete
@@ -85,7 +93,40 @@ export function TablesTab() {
         }}
         title="Edit Table"
       />
+
+      <TableQrModal table={showingQr} onClose={() => setShowingQrId(null)} />
     </div>
+  );
+}
+
+function TableQrModal({ table, onClose }: { table: TableDto | null; onClose: () => void }) {
+  const regenerateQr = useRegenerateTableQr();
+  const orderUrl = table?.qrToken ? `${window.location.origin}/order/${table.qrToken}` : null;
+
+  async function handleGenerate() {
+    if (!table) return;
+    if (table.qrToken && !window.confirm("Regenerating invalidates the current QR code — any printed copy will stop working. Continue?")) {
+      return;
+    }
+    await regenerateQr.mutateAsync(table.id);
+  }
+
+  return (
+    <Modal open={!!table} onClose={onClose} title={table ? `QR Code — ${table.name}` : "QR Code"}>
+      <div className="flex flex-col items-center gap-4">
+        {orderUrl ? (
+          <>
+            <QRCodeSVG value={orderUrl} size={200} />
+            <p className="text-xs text-gray-500 break-all text-center">{orderUrl}</p>
+          </>
+        ) : (
+          <p className="text-sm text-gray-500">No QR code generated yet for this table.</p>
+        )}
+        <Button onClick={handleGenerate} disabled={regenerateQr.isPending} className="w-full">
+          {table?.qrToken ? "Regenerate QR Code" : "Generate QR Code"}
+        </Button>
+      </div>
+    </Modal>
   );
 }
 

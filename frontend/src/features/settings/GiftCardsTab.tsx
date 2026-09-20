@@ -136,20 +136,26 @@ function GiftCardFormModal({
   return (
     <Modal open={open} onClose={onClose} title={title}>
       <form onSubmit={handleSubmit} className="space-y-3">
-        <Input
-          placeholder="Code (optional, auto-generated)"
-          value={code}
-          onChange={(e) => setCode(e.target.value)}
-          disabled={!!initial}
-        />
-        <Input
-          placeholder="Balance"
-          type="number"
-          step="0.01"
-          value={balance}
-          onChange={(e) => setBalance(e.target.value)}
-          required
-        />
+        <div>
+          <label className="block text-xs text-gray-500 mb-1">Code (optional, auto-generated)</label>
+          <Input
+            placeholder="Code (optional, auto-generated)"
+            value={code}
+            onChange={(e) => setCode(e.target.value)}
+            disabled={!!initial}
+          />
+        </div>
+        <div>
+          <label className="block text-xs text-gray-500 mb-1">Balance</label>
+          <Input
+            placeholder="Balance"
+            type="number"
+            step="0.01"
+            value={balance}
+            onChange={(e) => setBalance(e.target.value)}
+            required
+          />
+        </div>
         {initial && (
           <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} />

@@ -1,4 +1,4 @@
-import { Customer, Discount } from "@/api/types";
+import { Customer, Discount, TransactionOrigin } from "@/api/types";
 import { Button, Select } from "@/components/ui";
 import { money } from "./cartMath";
 
@@ -24,6 +24,7 @@ export function CartPanel({
   lines,
   totals,
   tableName,
+  orderOrigin,
   customers,
   customerId,
   onCustomerChange,
@@ -42,6 +43,7 @@ export function CartPanel({
   lines: CartLineView[];
   totals: CartTotals;
   tableName?: string | null;
+  orderOrigin?: TransactionOrigin;
   customers: Customer[];
   customerId: number | null;
   onCustomerChange: (id: number | null) => void;
@@ -61,7 +63,12 @@ export function CartPanel({
     <div className="flex flex-col h-full bg-white rounded-xl border border-gray-200 shadow-sm">
       <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
         <h2 className="font-semibold">Current Order</h2>
-        {tableName && <span className="text-xs bg-brand-100 text-brand-700 px-2 py-1 rounded-full">{tableName}</span>}
+        <div className="flex items-center gap-2">
+          {orderOrigin === "QR" && (
+            <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full">Ordered via QR</span>
+          )}
+          {tableName && <span className="text-xs bg-brand-100 text-brand-700 px-2 py-1 rounded-full">{tableName}</span>}
+        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto divide-y divide-gray-100">

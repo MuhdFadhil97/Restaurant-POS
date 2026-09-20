@@ -1,5 +1,6 @@
 export type Role = "ADMIN" | "MANAGER" | "CASHIER" | "KITCHEN";
 export type TransactionStatus = "HELD" | "OPEN" | "COMPLETED" | "VOIDED" | "REFUNDED";
+export type TransactionOrigin = "POS" | "QR";
 export type PaymentMethod = "CASH" | "CARD" | "EWALLET" | "GIFT_CARD" | "LOYALTY_POINTS";
 export type MovementType = "RESTOCK" | "WASTAGE" | "CORRECTION" | "SALE" | "REFUND" | "TRANSFER_OUT" | "TRANSFER_IN";
 export type TableStatus = "AVAILABLE" | "OCCUPIED" | "RESERVED" | "NOT_AVAILABLE";
@@ -7,7 +8,14 @@ export type TableShape = "ROUND" | "RECTANGLE";
 export type DiscountType = "PERCENTAGE" | "FIXED";
 export type DiscountScope = "LINE" | "ORDER";
 export type PrepStatus = "QUEUED" | "PREPARING" | "READY" | "SERVED";
-export type PurchaseOrderStatus = "DRAFT" | "ORDERED" | "PARTIALLY_RECEIVED" | "RECEIVED" | "CANCELLED";
+export type PurchaseOrderStatus =
+  | "DRAFT"
+  | "PENDING_APPROVAL"
+  | "APPROVED"
+  | "ORDERED"
+  | "PARTIALLY_RECEIVED"
+  | "RECEIVED"
+  | "CANCELLED";
 export type StockTransferStatus = "PENDING" | "IN_TRANSIT" | "RECEIVED" | "CANCELLED";
 export type StockTakeStatus = "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
 export type EInvoiceStatus = "NOT_APPLICABLE" | "GENERATED" | "CANCELLED";
@@ -142,6 +150,9 @@ export interface TableDto {
   reservedFor: string | null;
   reservedAt: string | null;
   reservedPartySize: number | null;
+  qrToken: string | null;
+  qrTokenRotatedAt: string | null;
+  activeOrder: { id: number; origin: TransactionOrigin } | null;
 }
 
 export interface TransactionItemDto {
@@ -183,6 +194,7 @@ export interface TransactionDto {
   cashierId: number;
   cashier?: { id: number; name: string };
   status: TransactionStatus;
+  origin: TransactionOrigin;
   receiptNumber?: string | null;
   einvoiceStatus?: EInvoiceStatus;
   einvoiceUuid?: string | null;
@@ -315,8 +327,34 @@ export interface Supplier {
   contactName?: string | null;
   email?: string | null;
   phone?: string | null;
+  address?: string | null;
+  taxRegistrationNumber?: string | null;
+  bankName?: string | null;
+  bankAccountName?: string | null;
+  bankAccountNumber?: string | null;
   paymentTerms?: string | null;
   isActive: boolean;
+}
+
+export interface SupplierProductDto {
+  id: number;
+  supplierId: number;
+  productId: number;
+  product: Product;
+  variantId: number | null;
+  variant: ProductVariant | null;
+  supplierSku?: string | null;
+  unitCost: number;
+  leadTimeDays?: number | null;
+  isPreferred: boolean;
+  updatedAt: string;
+}
+
+export interface SupplierPriceHistoryEntry {
+  poNumber: string;
+  date: string;
+  unitCost: number;
+  quantityOrdered: number;
 }
 
 export interface PurchaseOrderItemDto {
@@ -328,16 +366,31 @@ export interface PurchaseOrderItemDto {
   quantityOrdered: number;
   quantityReceived: number;
   unitCost: number;
+  taxRateId: number | null;
+  taxRate?: { id: number; name: string; rate: number } | null;
+  discountAmount: number;
+  taxAmount: number;
+  lineTotal: number;
 }
 
 export interface PurchaseOrderDto {
   id: number;
+  poNumber: string;
   outletId: number;
   outlet?: Outlet;
   supplierId: number;
   supplier?: Supplier;
   status: PurchaseOrderStatus;
   createdBy?: { id: number; name: string };
+  approvedBy?: { id: number; name: string } | null;
+  subtotal: number;
+  discountTotal: number;
+  taxTotal: number;
+  total: number;
+  submittedForApprovalAt?: string | null;
+  approvedAt?: string | null;
+  rejectedAt?: string | null;
+  rejectionReason?: string | null;
   orderedAt?: string | null;
   expectedAt?: string | null;
   receivedAt?: string | null;
@@ -395,6 +448,7 @@ export interface ImportPreviewRow {
   action: ImportRowAction;
   note?: string;
   error?: string;
+  data: Record<string, string>;
 }
 
 export interface ImportPreview {
@@ -496,4 +550,72 @@ export interface GiftCard {
   isActive: boolean;
   issuedAt: string;
   expiresAt?: string | null;
+}
+
+// ── Customer QR self-order (public, unauthenticated) ──────────────────────
+
+export interface QrMenuVariant {
+  id: number;
+  name: string;
+  value: string;
+  priceAdjustment: number;
+}
+
+export interface QrMenuProduct {
+  id: number;
+  name: string;
+  categoryId: number | null;
+  category: { id: number; name: string } | null;
+  unitPrice: number;
+  unitOfMeasure: string;
+  imageUrl: string | null;
+  variants: QrMenuVariant[];
+  stocks: { quantity: number }[];
+}
+
+export interface QrOrderItemView {
+  id: number;
+  productName: string;
+  variantValue: string | null;
+  quantity: number;
+  unitPrice: number;
+  lineTotal: number;
+  prepStatus: PrepStatus;
+}
+
+export interface QrOrderView {
+  id: number;
+  subtotal: number;
+  discountTotal: number;
+  serviceChargeTotal: number;
+  taxTotal: number;
+  total: number;
+  items: QrOrderItemView[];
+}
+
+export interface QrMenuResponse {
+  outlet: { id: number; name: string };
+  table: { id: number; name: string };
+  menu: QrMenuProduct[];
+  activeOrder: QrOrderView | null;
+}
+
+export interface QrOrderStatusResponse {
+  table: { id: number; name: string };
+  order: QrOrderView | null;
+}
+
+export interface EInvoiceVerifyResponse {
+  uuid: string;
+  longId: string;
+  status: EInvoiceStatus;
+  generatedAt: string | null;
+  receiptNumber: string | null;
+  total: number;
+  outlet: {
+    name: string;
+    address: string | null;
+    tin: string | null;
+    brn: string | null;
+  };
 }

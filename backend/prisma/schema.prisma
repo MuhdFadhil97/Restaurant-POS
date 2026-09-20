@@ -16,6 +16,7 @@ enum Role {
   MANAGER
   CASHIER
   KITCHEN
+  SYSTEM // sentinel used by automated flows (e.g. QR self-order); never assignable via the Users UI
 }
 
 enum MovementType {
@@ -41,6 +42,11 @@ enum TransactionStatus {
   COMPLETED
   VOIDED
   REFUNDED
+}
+
+enum TransactionOrigin {
+  POS // created by a staff member
+  QR // created by a customer via table QR self-order
 }
 
 enum DiscountType {
@@ -83,6 +89,8 @@ enum PrepStatus {
 
 enum PurchaseOrderStatus {
   DRAFT
+  PENDING_APPROVAL
+  APPROVED
   ORDERED
   PARTIALLY_RECEIVED
   RECEIVED
@@ -192,7 +200,8 @@ model User {
   inventoryMovements      InventoryMovement[]
   cashSessions            CashSession[]
   auditLogs               AuditLog[]
-  purchaseOrdersCreated   PurchaseOrder[]
+  purchaseOrdersCreated   PurchaseOrder[]      @relation("PurchaseOrderCreatedBy")
+  purchaseOrdersApproved  PurchaseOrder[]      @relation("PurchaseOrderApprovedBy")
   goodsReceivedNotes      GoodsReceivedNote[]
   stockTransfersRequested StockTransfer[]
   stockTakesStarted       StockTake[]          @relation("StockTakeStartedBy")
@@ -268,6 +277,7 @@ model Product {
   goodsReceivedNoteItems GoodsReceivedNoteItem[]
   stockTakeItems         StockTakeItem[]
   discounts              Discount[]
+  supplierProducts       SupplierProduct[]
 
   @@map("products")
 }
@@ -292,6 +302,7 @@ model ProductVariant {
   stockTransferItems     StockTransferItem[]
   goodsReceivedNoteItems GoodsReceivedNoteItem[]
   stockTakeItems         StockTakeItem[]
+  supplierProducts       SupplierProduct[]
 
   @@map("product_variants")
 }
@@ -348,6 +359,11 @@ model Table {
   name     String
   capacity Int         @default(2)
   status   TableStatus @default(AVAILABLE)
+
+  // Customer QR self-order. Null until staff generate one from Settings;
+  // regenerating overwrites it, immediately invalidating the old QR.
+  qrToken          String?   @unique @map("qr_token")
+  qrTokenRotatedAt DateTime? @map("qr_token_rotated_at")
 
   // Floor plan layout — nullable; null means "not yet positioned" (POS
   // falls back to the plain table strip until an outlet has a saved layout).
@@ -458,8 +474,9 @@ model TaxRate {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  outlet   Outlet    @relation(fields: [outletId], references: [id])
-  products Product[]
+  outlet             Outlet              @relation(fields: [outletId], references: [id])
+  products           Product[]
+  purchaseOrderItems PurchaseOrderItem[]
 
   @@map("tax_rates")
 }
@@ -492,6 +509,7 @@ model Transaction {
   customerId Int?              @map("customer_id")
   cashierId  Int               @map("cashier_id")
   status     TransactionStatus @default(OPEN)
+  origin     TransactionOrigin @default(POS)
 
   // Assigned once, when the transaction first reaches COMPLETED. Format: RECYYYYMMDDXXXXXX.
   receiptNumber String? @unique @map("receipt_number")
@@ -711,38 +729,88 @@ model StaffBreakRecord {
 // ─────────────────────────────────────────────────────────────────────────
 
 model Supplier {
-  id           Int       @id @default(autoincrement())
-  name         String
-  contactName  String?   @map("contact_name")
-  email        String?
-  phone        String?
-  paymentTerms String?   @map("payment_terms")
-  isActive     Boolean   @default(true) @map("is_active")
-  createdAt    DateTime  @default(now()) @map("created_at")
-  updatedAt    DateTime  @updatedAt @map("updated_at")
-  deletedAt    DateTime? @map("deleted_at")
+  id                    Int       @id @default(autoincrement())
+  name                  String
+  contactName           String?   @map("contact_name")
+  email                 String?
+  phone                 String?
+  address               String?
+  taxRegistrationNumber String?   @map("tax_registration_number")
+  bankName              String?   @map("bank_name")
+  bankAccountName       String?   @map("bank_account_name")
+  bankAccountNumber     String?   @map("bank_account_number")
+  paymentTerms          String?   @map("payment_terms")
+  isActive              Boolean   @default(true) @map("is_active")
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
+  deletedAt             DateTime? @map("deleted_at")
 
-  purchaseOrders PurchaseOrder[]
+  purchaseOrders   PurchaseOrder[]
+  supplierProducts SupplierProduct[]
 
   @@map("suppliers")
 }
 
+// A supplier's price catalog for a product: what they charge and how long
+// delivery takes, prefilled onto new PO lines. Historical pricing (what was
+// actually paid over time) is read from past PurchaseOrderItem rows instead
+// of duplicated here — this table only holds the current quoted price.
+model SupplierProduct {
+  id           Int      @id @default(autoincrement())
+  supplierId   Int      @map("supplier_id")
+  productId    Int      @map("product_id")
+  variantId    Int?     @map("variant_id")
+  supplierSku  String?  @map("supplier_sku")
+  unitCost     Decimal  @map("unit_cost") @db.Decimal(12, 2)
+  leadTimeDays Int?     @map("lead_time_days")
+  isPreferred  Boolean  @default(false) @map("is_preferred")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  supplier Supplier        @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  product  Product         @relation(fields: [productId], references: [id])
+  variant  ProductVariant? @relation(fields: [variantId], references: [id])
+
+  @@unique([supplierId, productId, variantId])
+  @@map("supplier_products")
+}
+
+// Allocates yearly-sequential, human-readable PO numbers (PO-{YYYY}-{00001}),
+// atomically upserted the same way ReceiptSequence allocates receipt numbers.
+model PurchaseOrderSequence {
+  year       String @id @db.Char(4)
+  lastNumber Int    @default(0) @map("last_number")
+
+  @@map("purchase_order_sequences")
+}
+
 model PurchaseOrder {
-  id              Int                 @id @default(autoincrement())
-  outletId        Int                 @map("outlet_id")
-  supplierId      Int                 @map("supplier_id")
-  status          PurchaseOrderStatus @default(DRAFT)
-  createdByUserId Int                 @map("created_by_user_id")
-  orderedAt       DateTime?           @map("ordered_at")
-  expectedAt      DateTime?           @map("expected_at")
-  receivedAt      DateTime?           @map("received_at")
-  notes           String?
-  createdAt       DateTime            @default(now()) @map("created_at")
-  updatedAt       DateTime            @updatedAt @map("updated_at")
+  id                     Int                 @id @default(autoincrement())
+  poNumber               String              @unique @map("po_number")
+  outletId               Int                 @map("outlet_id")
+  supplierId             Int                 @map("supplier_id")
+  status                 PurchaseOrderStatus @default(DRAFT)
+  createdByUserId        Int                 @map("created_by_user_id")
+  subtotal               Decimal             @default(0) @db.Decimal(12, 2)
+  discountTotal          Decimal             @default(0) @map("discount_total") @db.Decimal(12, 2)
+  taxTotal               Decimal             @default(0) @map("tax_total") @db.Decimal(12, 2)
+  total                  Decimal             @default(0) @db.Decimal(12, 2)
+  submittedForApprovalAt DateTime?           @map("submitted_for_approval_at")
+  approvedByUserId       Int?                @map("approved_by_user_id")
+  approvedAt             DateTime?           @map("approved_at")
+  rejectedAt             DateTime?           @map("rejected_at")
+  rejectionReason        String?             @map("rejection_reason")
+  orderedAt              DateTime?           @map("ordered_at")
+  expectedAt             DateTime?           @map("expected_at")
+  receivedAt             DateTime?           @map("received_at")
+  notes                  String?
+  createdAt              DateTime            @default(now()) @map("created_at")
+  updatedAt              DateTime            @updatedAt @map("updated_at")
 
   outlet             Outlet              @relation(fields: [outletId], references: [id])
   supplier           Supplier            @relation(fields: [supplierId], references: [id])
-  createdBy          User                @relation(fields: [createdByUserId], references: [id])
+  createdBy          User                @relation("PurchaseOrderCreatedBy", fields: [createdByUserId], references: [id])
+  approvedBy         User?               @relation("PurchaseOrderApprovedBy", fields: [approvedByUserId], references: [id])
   items              PurchaseOrderItem[]
   goodsReceivedNotes GoodsReceivedNote[]
 
@@ -757,10 +825,15 @@ model PurchaseOrderItem {
   quantityOrdered  Int     @map("quantity_ordered")
   quantityReceived Int     @default(0) @map("quantity_received")
   unitCost         Decimal @map("unit_cost") @db.Decimal(12, 2)
+  taxRateId        Int?    @map("tax_rate_id")
+  discountAmount   Decimal @default(0) @map("discount_amount") @db.Decimal(12, 2)
+  taxAmount        Decimal @default(0) @map("tax_amount") @db.Decimal(12, 2)
+  lineTotal        Decimal @default(0) @map("line_total") @db.Decimal(12, 2)
 
   purchaseOrder          PurchaseOrder           @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
   product                Product                 @relation(fields: [productId], references: [id])
   variant                ProductVariant?         @relation(fields: [variantId], references: [id])
+  taxRate                TaxRate?                @relation(fields: [taxRateId], references: [id])
   goodsReceivedNoteItems GoodsReceivedNoteItem[]
 
   @@map("purchase_order_items")

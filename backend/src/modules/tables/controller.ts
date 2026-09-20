@@ -27,3 +27,7 @@ export const saveLayout = asyncHandler(async (req: Request, res: Response) => {
   const { outletId, tables } = req.body;
   res.json(await service.saveLayout(outletId, tables));
 });
+
+export const regenerateQrToken = asyncHandler(async (req: Request, res: Response) => {
+  res.json(await service.generateQrToken(Number(req.params.id)));
+});

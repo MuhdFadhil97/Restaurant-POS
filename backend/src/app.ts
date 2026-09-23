@@ -4,7 +4,9 @@ import morgan from "morgan";
 import path from "path";
 import { env } from "./config/env";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler";
+import { requireValidLicense } from "./middleware/license";
 
+import licenseRoutes from "./modules/license/routes";
 import authRoutes from "./modules/auth/routes";
 import outletRoutes from "./modules/outlets/routes";
 import userRoutes from "./modules/users/routes";
@@ -46,6 +48,11 @@ if (env.nodeEnv !== "test") {
 app.get("/health", (_req, res) => res.json({ status: "ok" }));
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
+// Must come before the route mounts below: it inspects req.path per request
+// and exempts /api/license, /api/auth/login and /health itself internally.
+app.use(requireValidLicense);
+
+app.use("/api/license", licenseRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/outlets", outletRoutes);
 app.use("/api/users", userRoutes);

@@ -35,4 +35,8 @@ export class ApiError extends Error {
   static locked(message = "Account is temporarily locked") {
     return new ApiError(423, "ACCOUNT_LOCKED", message);
   }
+
+  static licenseRestricted(message: string) {
+    return new ApiError(402, "LICENSE_RESTRICTED", message);
+  }
 }

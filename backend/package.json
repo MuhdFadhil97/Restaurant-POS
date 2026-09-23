@@ -12,7 +12,10 @@
     "prisma:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
     "seed": "tsx prisma/seed.ts",
-    "test": "vitest run"
+    "test": "vitest run",
+    "license:keygen": "tsx scripts/license/generate-keypair.ts",
+    "license:issue": "tsx scripts/license/issue-license.ts",
+    "license:check": "tsx scripts/license/check-clients.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

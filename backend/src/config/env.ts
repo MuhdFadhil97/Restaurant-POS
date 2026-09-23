@@ -8,6 +8,13 @@ function required(name: string): string {
   return value;
 }
 
+// Some hosts only support single-line env vars, so a multi-line PEM is often
+// pasted in with literal "\n" sequences instead of real newlines. Normalize
+// either form.
+function normalizePem(value: string | undefined): string | undefined {
+  return value?.includes("\\n") ? value.replace(/\\n/g, "\n") : value;
+}
+
 export const env = {
   nodeEnv: process.env.NODE_ENV ?? "development",
   port: Number(process.env.PORT ?? 4000),
@@ -17,4 +24,8 @@ export const env = {
   corsOrigin: (process.env.CORS_ORIGIN ?? "http://localhost:5173")
     .split(",")
     .map((origin) => origin.trim()),
+  // See backend/docs/LICENSING.md. Both are optional in non-production envs —
+  // the app runs unrestricted when neither is set and NODE_ENV isn't "production".
+  licenseKey: process.env.LICENSE_KEY,
+  licensePublicKey: normalizePem(process.env.LICENSE_PUBLIC_KEY),
 };

@@ -7,7 +7,8 @@ COPY prisma ./prisma
 RUN npm install
 
 COPY . .
+RUN npm run build
 
 EXPOSE 4000
 
-CMD ["npx", "tsx", "watch", "src/server.ts"]
+CMD ["node", "dist/server.js"]

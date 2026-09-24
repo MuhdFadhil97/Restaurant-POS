@@ -33,6 +33,7 @@ import { ShiftBar } from "./ShiftBar";
 import { DeviceBanner } from "../hardware/DeviceBanner";
 import { useSendToKitchen } from "@/api/printJobs";
 import { useCurrentTerminal } from "../hardware/useCurrentTerminal";
+import { useCustomerDisplayPublisher } from "../hardware/useCustomerDisplayPublisher";
 
 // Cart line keys only need to be unique within this page. Not
 // crypto.randomUUID(): browsers only expose it on secure origins, so it
@@ -76,13 +77,9 @@ export function PosPage() {
   // A "Sent to Kitchen" notice belongs to the order it was shown for.
   useEffect(() => setKitchenNotice(null), [resumingId]);
 
-  if (!outletId) {
-    return <p className="text-gray-500">Select an outlet to start selling.</p>;
-  }
-  if (productsLoading || !products) {
-    return <Spinner />;
-  }
-
+  // Computed before the early returns below (neither depends on the product
+  // catalog) so useCustomerDisplayPublisher can be called unconditionally,
+  // same as every other hook in this component.
   const orderDiscountObj = discounts?.find((d) => d.id === orderDiscountId) ?? null;
   const activeOutlet = outlets?.find((o) => o.id === outletId) ?? null;
   const defaultTaxRate = taxRates?.find((t) => t.isDefault)?.rate ?? 0;
@@ -125,6 +122,42 @@ export function PosPage() {
         total: Number(resumingTx.total),
       }
     : previewTotals(localCart, orderDiscountObj, serviceChargeConfig);
+
+  // Paid takes priority: right after checkout/finalize, resetAll() clears the
+  // live cart before the success modal closes, and the display should keep
+  // showing what was actually paid for, not flash back to "Welcome!".
+  useCustomerDisplayPublisher(
+    terminal,
+    paidTransaction
+      ? {
+          status: "PAID",
+          lines: paidTransaction.items.map((item) => ({
+            name: item.product.name,
+            variantLabel: item.variant?.value,
+            quantity: item.quantity,
+            lineTotal: Number(item.lineTotal),
+          })),
+          totals: {
+            subtotal: Number(paidTransaction.subtotal),
+            discountTotal: Number(paidTransaction.discountTotal),
+            serviceChargeTotal: Number(paidTransaction.serviceChargeTotal),
+            taxTotal: Number(paidTransaction.taxTotal),
+            total: Number(paidTransaction.total),
+          },
+        }
+      : {
+          status: lines.length > 0 ? "CART" : "IDLE",
+          lines: lines.map((l) => ({ name: l.name, variantLabel: l.variantLabel, quantity: l.quantity, lineTotal: l.lineTotal })),
+          totals,
+        }
+  );
+
+  if (!outletId) {
+    return <p className="text-gray-500">Select an outlet to start selling.</p>;
+  }
+  if (productsLoading || !products) {
+    return <Spinner />;
+  }
 
   function toItemInputs() {
     return localCart.map((item) => ({

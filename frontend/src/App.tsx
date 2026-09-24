@@ -14,6 +14,7 @@ import { KdsPage } from "@/features/kds/KdsPage";
 import { AttendancePage } from "@/features/attendance/AttendancePage";
 import { ShiftManagementPage } from "@/features/shiftManagement/ShiftManagementPage";
 import { QrMenuPage } from "@/features/qrOrder/QrMenuPage";
+import { CustomerDisplayPage } from "./features/customerDisplay/CustomerDisplayPage";
 import { QrOrderStatusPage } from "@/features/qrOrder/QrOrderStatusPage";
 import { EInvoiceVerifyPage } from "@/features/einvoice/EInvoiceVerifyPage";
 
@@ -24,6 +25,7 @@ export function App() {
       <Route path="/order/:token" element={<QrMenuPage />} />
       <Route path="/order/:token/status" element={<QrOrderStatusPage />} />
       <Route path="/einvoice/:uuid/share/:longId" element={<EInvoiceVerifyPage />} />
+      <Route path="/display/:token" element={<CustomerDisplayPage />} />
 
       <Route element={<ProtectedRoute />}>
         <Route element={<AppLayout />}>

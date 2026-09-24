@@ -9,6 +9,7 @@ import { DiscountsTab } from "./DiscountsTab";
 import { GiftCardsTab } from "./GiftCardsTab";
 import { KitchenStationsTab } from "./KitchenStationsTab";
 import { AuditLogTab } from "./AuditLogTab";
+import { HardwareTab } from "../hardware/HardwareTab";
 
 const tabs = [
   { key: "outlets", label: "Outlets & Receipt", component: OutletsTab },
@@ -17,6 +18,7 @@ const tabs = [
   { key: "tables", label: "Tables", component: TablesTab },
   { key: "floor-plan", label: "Floor Plan", component: FloorPlanTab },
   { key: "kitchen-stations", label: "Kitchen Stations", component: KitchenStationsTab },
+  { key: "hardware", label: "Hardware", component: HardwareTab },
   { key: "categories", label: "Categories", component: CategoriesTab },
   { key: "discounts", label: "Discounts & Promotions", component: DiscountsTab },
   { key: "gift-cards", label: "Gift Cards", component: GiftCardsTab },

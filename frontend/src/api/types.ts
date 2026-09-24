@@ -82,6 +82,60 @@ export interface KitchenStation {
   id: number;
   outletId: number;
   name: string;
+  printerId?: number | null;
+}
+
+// ── Hardware ────────────────────────────────────────────────────────────
+export type PrinterConnection = "NETWORK_DIRECT" | "NETWORK_BRIDGE" | "TERMINAL_LOCAL";
+export type CustomerDisplayMode = "NONE" | "SAME_DEVICE" | "REMOTE";
+export type PrintJobKind = "RECEIPT" | "KITCHEN_TICKET" | "DRAWER_KICK" | "TEST";
+export type PrintJobStatus = "PENDING" | "CLAIMED" | "PRINTED" | "FAILED";
+
+export interface TerminalDto {
+  id: number;
+  outletId: number;
+  name: string;
+  receiptPrinterId: number | null;
+  cashDrawerEnabled: boolean;
+  customerDisplayMode: CustomerDisplayMode;
+  displayToken: string;
+  lastSeenAt: string | null;
+  isActive: boolean;
+  receiptPrinter: { id: number; name: string; connection: PrinterConnection; lastStatus: string | null } | null;
+}
+
+export interface PrinterDto {
+  id: number;
+  outletId: number;
+  name: string;
+  connection: PrinterConnection;
+  host: string | null;
+  port: number;
+  bridgeId: number | null;
+  terminalId: number | null;
+  paperWidth: 58 | 80;
+  charsPerLine: number;
+  lastStatus: string | null;
+  lastSeenAt: string | null;
+  isActive: boolean;
+  bridge: { id: number; name: string } | null;
+  hostTerminal: { id: number; name: string } | null;
+}
+
+export interface PrintJobDto {
+  id: number;
+  outletId: number;
+  printerId: number;
+  kind: PrintJobKind;
+  status: PrintJobStatus;
+  attempts: number;
+  lastError: string | null;
+  transactionId: number | null;
+  createdById: number | null;
+  claimedAt: string | null;
+  printedAt: string | null;
+  createdAt: string;
+  printer: { id: number; name: string; connection: PrinterConnection };
 }
 
 export interface Product {

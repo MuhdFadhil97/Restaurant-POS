@@ -1,6 +1,7 @@
 import { app } from "./app";
 import { env } from "./config/env";
 import { getLicenseStatus } from "./lib/license";
+import { startPrintDispatcher } from "./lib/printing/dispatcher";
 
 const license = getLicenseStatus();
 switch (license.state) {
@@ -23,4 +24,5 @@ switch (license.state) {
 
 app.listen(env.port, () => {
   console.log(`POS API listening on port ${env.port} (${env.nodeEnv})`);
+  startPrintDispatcher();
 });

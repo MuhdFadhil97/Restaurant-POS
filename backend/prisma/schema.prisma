@@ -172,6 +172,10 @@ model Outlet {
   staffShiftTemplates StaffShiftTemplate[]
   staffShiftSchedules StaffShiftSchedule[]
   staffAttendance     StaffAttendance[]
+  terminals           Terminal[]
+  printers            Printer[]
+  printBridges        PrintBridge[]
+  printJobs           PrintJob[]
 
   @@map("outlets")
 }
@@ -194,6 +198,7 @@ model User {
   deletedAt DateTime? @map("deleted_at")
 
   outletAccess            UserOutlet[]
+  createdPrintJobs        PrintJob[]
   cashierTransactions     Transaction[]        @relation("CashierTransactions")
   voidedTransactions      Transaction[]        @relation("VoidedByUser")
   approvedTransactions    Transaction[]        @relation("ApprovedByUser")
@@ -396,11 +401,15 @@ model KitchenStation {
   id        Int       @id @default(autoincrement())
   outletId  Int       @map("outlet_id")
   name      String
+  // Kitchen/bar ticket printer for this station (optional; a station with no
+  // printer is KDS-only).
+  printerId Int?      @map("printer_id")
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @updatedAt @map("updated_at")
   deletedAt DateTime? @map("deleted_at")
 
   outlet   Outlet    @relation(fields: [outletId], references: [id])
+  printer  Printer?  @relation(fields: [printerId], references: [id])
   products Product[]
 
   @@map("kitchen_stations")
@@ -553,8 +562,9 @@ model Transaction {
   approvedBy    User?     @relation("ApprovedByUser", fields: [approvedByUserId], references: [id])
   orderDiscount Discount? @relation("OrderDiscount", fields: [orderDiscountId], references: [id])
 
-  items    TransactionItem[]
-  payments Payment[]
+  items     TransactionItem[]
+  payments  Payment[]
+  printJobs PrintJob[]
 
   @@map("transactions")
 }
@@ -586,6 +596,10 @@ model TransactionItem {
   preparingAt DateTime?  @map("preparing_at")
   readyAt     DateTime?  @map("ready_at")
   servedAt    DateTime?  @map("served_at")
+
+  // Set once the item has gone out on a kitchen ticket, so "Send to kitchen"
+  // only prints items that haven't been printed yet.
+  kitchenPrintedAt DateTime? @map("kitchen_printed_at")
 
   createdAt DateTime @default(now()) @map("created_at")
 
@@ -621,6 +635,7 @@ model CashSession {
   id           Int               @id @default(autoincrement())
   outletId     Int               @map("outlet_id")
   userId       Int               @map("user_id")
+  terminalId   Int?              @map("terminal_id")
   status       CashSessionStatus @default(OPEN)
   openingCash  Decimal           @map("opening_cash") @db.Decimal(12, 2)
   expectedCash Decimal?          @map("expected_cash") @db.Decimal(12, 2)
@@ -629,8 +644,9 @@ model CashSession {
   openedAt     DateTime          @default(now()) @map("opened_at")
   closedAt     DateTime?         @map("closed_at")
 
-  outlet Outlet @relation(fields: [outletId], references: [id])
-  user   User   @relation(fields: [userId], references: [id])
+  outlet   Outlet    @relation(fields: [outletId], references: [id])
+  user     User      @relation(fields: [userId], references: [id])
+  terminal Terminal? @relation(fields: [terminalId], references: [id])
 
   @@map("cash_sessions")
 }
@@ -978,4 +994,134 @@ model AuditLog {
   user   User    @relation(fields: [userId], references: [id])
 
   @@map("audit_logs")
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Hardware: terminals, printers, print bridges, print job queue
+// ─────────────────────────────────────────────────────────────────────────
+
+enum CustomerDisplayMode {
+  NONE
+  SAME_DEVICE // second monitor on the terminal itself (BroadcastChannel)
+  REMOTE // separate tablet, relayed through the backend
+}
+
+// How a print job's bytes get from the queue to the printer.
+enum PrinterConnection {
+  NETWORK_DIRECT // backend opens TCP to host:port itself (backend on-site)
+  NETWORK_BRIDGE // an on-site print-bridge agent claims and forwards jobs
+  TERMINAL_LOCAL // USB/Bluetooth printer attached to a terminal; that terminal claims jobs
+}
+
+enum PrintJobKind {
+  RECEIPT
+  KITCHEN_TICKET
+  DRAWER_KICK
+  TEST
+}
+
+enum PrintJobStatus {
+  PENDING
+  CLAIMED
+  PRINTED
+  FAILED
+}
+
+// A named POS device ("Counter 1"). The browser/app remembers which terminal
+// it is in localStorage; hardware is assigned per terminal.
+model Terminal {
+  id                  Int                 @id @default(autoincrement())
+  outletId            Int                 @map("outlet_id")
+  name                String
+  receiptPrinterId    Int?                @map("receipt_printer_id")
+  cashDrawerEnabled   Boolean             @default(false) @map("cash_drawer_enabled")
+  customerDisplayMode CustomerDisplayMode @default(NONE) @map("customer_display_mode")
+  displayToken        String              @unique @map("display_token")
+  lastSeenAt          DateTime?           @map("last_seen_at")
+  isActive            Boolean             @default(true) @map("is_active")
+  createdAt           DateTime            @default(now()) @map("created_at")
+  updatedAt           DateTime            @updatedAt @map("updated_at")
+  deletedAt           DateTime?           @map("deleted_at")
+
+  outlet         Outlet        @relation(fields: [outletId], references: [id])
+  receiptPrinter Printer?      @relation("TerminalReceiptPrinter", fields: [receiptPrinterId], references: [id])
+  localPrinters  Printer[]     @relation("PrinterHostTerminal")
+  cashSessions   CashSession[]
+
+  @@map("terminals")
+}
+
+model Printer {
+  id           Int               @id @default(autoincrement())
+  outletId     Int               @map("outlet_id")
+  name         String
+  connection   PrinterConnection
+  host         String?
+  port         Int               @default(9100)
+  bridgeId     Int?              @map("bridge_id")
+  terminalId   Int?              @map("terminal_id") // host terminal, for TERMINAL_LOCAL
+  paperWidth   Int               @default(80) @map("paper_width") // mm: 58 or 80
+  charsPerLine Int               @default(48) @map("chars_per_line")
+  lastStatus   String?           @map("last_status") // "OK" or the last error message
+  lastSeenAt   DateTime?         @map("last_seen_at")
+  isActive     Boolean           @default(true) @map("is_active")
+  createdAt    DateTime          @default(now()) @map("created_at")
+  updatedAt    DateTime          @updatedAt @map("updated_at")
+  deletedAt    DateTime?         @map("deleted_at")
+
+  outlet           Outlet           @relation(fields: [outletId], references: [id])
+  bridge           PrintBridge?     @relation(fields: [bridgeId], references: [id])
+  hostTerminal     Terminal?        @relation("PrinterHostTerminal", fields: [terminalId], references: [id])
+  receiptTerminals Terminal[]       @relation("TerminalReceiptPrinter")
+  kitchenStations  KitchenStation[]
+  jobs             PrintJob[]
+
+  @@map("printers")
+}
+
+// On-site agent that forwards jobs to LAN printers when the backend is hosted
+// remotely. Authenticates with a token whose sha256 is stored here; the
+// plaintext is shown once at creation.
+model PrintBridge {
+  id         Int       @id @default(autoincrement())
+  outletId   Int       @map("outlet_id")
+  name       String
+  tokenHash  String    @unique @map("token_hash")
+  lastSeenAt DateTime? @map("last_seen_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+  deletedAt  DateTime? @map("deleted_at")
+
+  outlet   Outlet    @relation(fields: [outletId], references: [id])
+  printers Printer[]
+
+  @@map("print_bridges")
+}
+
+// Every print (receipt, kitchen ticket, drawer kick, test page) is a row here.
+// payload holds the rendered ESC/POS bytes, so every transport sends the same thing.
+model PrintJob {
+  id            Int            @id @default(autoincrement())
+  outletId      Int            @map("outlet_id")
+  printerId     Int            @map("printer_id")
+  kind          PrintJobKind
+  payload       Bytes
+  status        PrintJobStatus @default(PENDING)
+  attempts      Int            @default(0)
+  lastError     String?        @map("last_error")
+  transactionId Int?           @map("transaction_id")
+  createdById   Int?           @map("created_by_id")
+  claimedAt     DateTime?      @map("claimed_at")
+  printedAt     DateTime?      @map("printed_at")
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
+
+  outlet      Outlet       @relation(fields: [outletId], references: [id])
+  printer     Printer      @relation(fields: [printerId], references: [id])
+  transaction Transaction? @relation(fields: [transactionId], references: [id])
+  createdBy   User?        @relation(fields: [createdById], references: [id])
+
+  @@index([printerId, status])
+  @@index([outletId, createdAt])
+  @@map("print_jobs")
 }

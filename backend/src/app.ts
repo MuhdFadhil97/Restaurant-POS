@@ -36,6 +36,9 @@ import shiftTemplateRoutes from "./modules/shiftTemplates/routes";
 import shiftScheduleRoutes from "./modules/shiftSchedules/routes";
 import staffAttendanceRoutes from "./modules/staffAttendance/routes";
 import einvoiceRoutes from "./modules/einvoice/routes";
+import terminalRoutes from "./modules/terminals/routes";
+import printerRoutes from "./modules/printers/routes";
+import printJobRoutes from "./modules/printJobs/routes";
 
 export const app = express();
 
@@ -71,6 +74,9 @@ app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/audit-logs", auditLogRoutes);
 app.use("/api/kitchen-stations", kitchenStationRoutes);
 app.use("/api/kds", kdsRoutes);
+app.use("/api/terminals", terminalRoutes);
+app.use("/api/printers", printerRoutes);
+app.use("/api/print-jobs", printJobRoutes);
 app.use("/api/suppliers", supplierRoutes);
 app.use("/api/supplier-products", supplierProductRoutes);
 app.use("/api/purchase-orders", purchaseOrderRoutes);

@@ -12,3 +12,6 @@ backend/uploads/
 backend/keys/
 *.pem
 *.license
+
+# Fake thermal printer output (backend/scripts/fake-printer.ts)
+backend/fake-printer-output/

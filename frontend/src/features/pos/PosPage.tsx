@@ -30,6 +30,7 @@ import { HeldTransactionsModal } from "./HeldTransactionsModal";
 import { ReceiptPreviewModal } from "./ReceiptPreviewModal";
 import { LocalCartItem, previewLine, previewTotals } from "./cartMath";
 import { ShiftBar } from "./ShiftBar";
+import { DeviceBanner } from "../hardware/DeviceBanner";
 
 export function PosPage() {
   const outletId = useOutletStore((s) => s.activeOutletId);
@@ -270,6 +271,7 @@ export function PosPage() {
 
   return (
     <div className="flex flex-col h-full gap-4">
+      <DeviceBanner outletId={outletId} />
       <ShiftBar outletId={outletId} />
       {hasFloorPlan ? (
         <div className="flex items-start gap-3">

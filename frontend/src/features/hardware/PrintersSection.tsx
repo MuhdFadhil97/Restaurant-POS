@@ -228,9 +228,7 @@ function PrinterFormModal({
           <Select value={connection} onChange={(e) => setConnection(e.target.value as PrinterConnection)}>
             <option value="NETWORK_DIRECT">{connectionLabels.NETWORK_DIRECT}</option>
             <option value="NETWORK_BRIDGE">{connectionLabels.NETWORK_BRIDGE}</option>
-            <option value="TERMINAL_LOCAL" disabled>
-              {connectionLabels.TERMINAL_LOCAL} (coming soon)
-            </option>
+            <option value="TERMINAL_LOCAL">{connectionLabels.TERMINAL_LOCAL}</option>
           </Select>
         </label>
         {isNetwork && (
@@ -275,6 +273,10 @@ function PrinterFormModal({
                 </option>
               ))}
             </Select>
+            <p className="text-xs text-gray-500 mt-1">
+              After saving, connect the actual USB/serial device from Settings → Hardware → This Device, on that
+              terminal's own machine.
+            </p>
           </label>
         )}
         <div className="grid grid-cols-2 gap-2">

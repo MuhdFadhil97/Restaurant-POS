@@ -32,6 +32,14 @@ export const reprintReceipt = asyncHandler(async (req: Request, res: Response) =
   res.status(201).json(await receipts.reprintReceipt(req.body.transactionId, req.body.terminalId, req.user));
 });
 
+export const claimForTerminal = asyncHandler(async (req: Request, res: Response) => {
+  res.json(await service.claimJobsForTerminal(Number(req.params.terminalId), req.user, optionalIdQuery(req.query.limit)));
+});
+
+export const ackTerminalJob = asyncHandler(async (req: Request, res: Response) => {
+  res.json(await service.ackTerminalJob(Number(req.params.id), req.user, req.body));
+});
+
 export const sendToKitchen = asyncHandler(async (req: Request, res: Response) => {
   const transaction = await prisma.transaction.findUnique({ where: { id: req.body.transactionId } });
   if (!transaction) throw ApiError.notFound("Transaction not found");

@@ -13,11 +13,20 @@ A single web-based Point of Sale application for retail/F&B, built with a multi-
 
 - Multi-outlet from day one (outlet switcher, per-outlet stock, cross-outlet reporting)
 - F&B with table management (tables, open tabs)
-- Receipts: printable HTML only (thermal/ESC-POS deferred)
+- Receipts: printable HTML by default, with thermal/ESC-POS printer support added in Phase 8 (see below)
 
 ## Phase 7 additions
 
 Built after the v1 core: Kitchen Display System / order routing (`KITCHEN` role, `/kds`), supplier & purchasing (purchase orders with partial receiving) + multi-outlet stock transfers, loyalty points + rule-based promotions + gift cards, and user access management (auth audit trail, account lockout). See [`planning.md`](planning.md) Phase 7 and [`memory.md`](memory.md) Key Decisions for details.
+
+## Phase 8: Hardware
+
+Thermal receipt/kitchen printers (network, an on-site print bridge for a
+cloud-hosted backend, or USB/serial plugged into a terminal), the cash
+drawer, and a customer-facing display. Setting this up at a restaurant:
+[`HARDWARE_SETUP.md`](HARDWARE_SETUP.md). How it's built, and the full API
+reference for `/terminals`, `/printers`, `/print-jobs`, `/print-bridges` and
+`/customer-display`: [`backend/docs/HARDWARE.md`](backend/docs/HARDWARE.md).
 
 ## Quick Start — Docker Compose
 
@@ -100,6 +109,7 @@ Error shape (consistent across the API):
 | Purchase Orders | `GET/POST /purchase-orders`, `GET /purchase-orders/:id`, `POST /purchase-orders/:id/mark-ordered\|receive\|cancel` (admin/manager) |
 | Stock Transfers | `GET/POST /stock-transfers`, `GET /stock-transfers/:id`, `POST /stock-transfers/:id/send\|receive\|cancel` (admin/manager) |
 | Gift Cards | `GET /gift-cards/lookup?code=`, `GET/POST /gift-cards`, `PATCH /gift-cards/:id` |
+| Hardware | `/terminals`, `/printers`, `/print-jobs`, `/print-bridges`, `/customer-display` — full reference in [`backend/docs/HARDWARE.md`](backend/docs/HARDWARE.md) |
 
 ### Checkout flow
 

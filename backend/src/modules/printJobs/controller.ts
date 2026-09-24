@@ -5,6 +5,9 @@ import { ApiError } from "../../lib/apiError";
 import { optionalIdQuery } from "../../lib/query";
 import * as service from "./service";
 import * as receipts from "./receipts";
+import * as kitchen from "./kitchen";
+import { prisma } from "../../lib/prisma";
+import { assertOutletAccess } from "../../lib/outletAccess";
 
 const STATUSES = new Set<string>(Object.values(PrintJobStatus));
 
@@ -27,4 +30,14 @@ export const retry = asyncHandler(async (req: Request, res: Response) => {
 
 export const reprintReceipt = asyncHandler(async (req: Request, res: Response) => {
   res.status(201).json(await receipts.reprintReceipt(req.body.transactionId, req.body.terminalId, req.user));
+});
+
+export const sendToKitchen = asyncHandler(async (req: Request, res: Response) => {
+  const transaction = await prisma.transaction.findUnique({ where: { id: req.body.transactionId } });
+  if (!transaction) throw ApiError.notFound("Transaction not found");
+  assertOutletAccess(req.user, transaction.outletId);
+  if (transaction.status !== "OPEN" && transaction.status !== "HELD") {
+    throw ApiError.badRequest("Only open or held orders can be sent to the kitchen");
+  }
+  res.status(201).json(await kitchen.sendToKitchen(transaction.id, req.user?.userId ?? null));
 });

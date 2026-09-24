@@ -6,6 +6,11 @@ export function formatPrintTime(date: Date | string) {
   return new Date(date).toLocaleString("en-MY", { timeZone: env.appTimeZone });
 }
 
+// Time of day only — kitchen tickets are same-shift, and 58mm paper is narrow.
+export function formatPrintClock(date: Date | string) {
+  return new Date(date).toLocaleTimeString("en-MY", { timeZone: env.appTimeZone, hour: "numeric", minute: "2-digit" });
+}
+
 // Thermal-printer version of frontend/src/features/transactions/Receipt.tsx
 // (same fields, same order), ported from the Android clone's
 // receiptPrinterTemplate.ts. Keep the three in step when the receipt changes.

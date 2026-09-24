@@ -13,8 +13,27 @@ export function useKitchenStations(outletId?: number) {
 export function useCreateKitchenStation() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (input: { outletId: number; name: string }) =>
+    mutationFn: async (input: { outletId: number; name: string; printerId?: number | null }) =>
       (await apiClient.post<KitchenStation>("/kitchen-stations", input)).data,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["kitchen-stations"] }),
+  });
+}
+
+export function useUpdateKitchenStation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, input }: { id: number; input: { name?: string; printerId?: number | null } }) =>
+      (await apiClient.patch<KitchenStation>(`/kitchen-stations/${id}`, input)).data,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["kitchen-stations"] }),
+  });
+}
+
+export function useDeleteKitchenStation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: number) => {
+      await apiClient.delete(`/kitchen-stations/${id}`);
+    },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["kitchen-stations"] }),
   });
 }

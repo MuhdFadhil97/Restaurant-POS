@@ -41,3 +41,20 @@ export function useReprintReceipt() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["print-jobs"] }),
   });
 }
+
+export interface KitchenSendResult {
+  tickets: { stationName: string; printerName: string; jobId: number; itemCount: number }[];
+  unroutedCount: number;
+}
+
+export function useSendToKitchen() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (transactionId: number) =>
+      (await apiClient.post<KitchenSendResult>("/print-jobs/kitchen", { transactionId })).data,
+    onSuccess: (_data, transactionId) => {
+      qc.invalidateQueries({ queryKey: ["transaction", transactionId] });
+      qc.invalidateQueries({ queryKey: ["print-jobs"] });
+    },
+  });
+}

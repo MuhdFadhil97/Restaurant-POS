@@ -4,7 +4,7 @@ import { validate } from "../../middleware/validate";
 import {
   addItemSchema,
   checkoutSchema,
-  createDraftSchema,
+  createDraftRequestSchema,
   finalizeSchema,
   listQuerySchema,
   updateItemSchema,
@@ -20,7 +20,7 @@ router.use(authenticate);
 router.get("/", validate({ query: listQuerySchema }), controller.list);
 router.get("/:id", controller.getOne);
 
-router.post("/", validate({ body: createDraftSchema }), controller.createDraft);
+router.post("/", validate({ body: createDraftRequestSchema }), controller.createDraft);
 router.post("/checkout", validate({ body: checkoutSchema }), controller.checkout);
 router.post("/:id/finalize", validate({ body: finalizeSchema }), controller.finalize);
 

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useOutletStore } from "@/store/outletStore";
 import { useOutlets } from "@/api/outlets";
 import { useProducts } from "@/api/products";
@@ -31,6 +31,7 @@ import { ReceiptPreviewModal } from "./ReceiptPreviewModal";
 import { LocalCartItem, previewLine, previewTotals } from "./cartMath";
 import { ShiftBar } from "./ShiftBar";
 import { DeviceBanner } from "../hardware/DeviceBanner";
+import { useSendToKitchen } from "@/api/printJobs";
 import { useCurrentTerminal } from "../hardware/useCurrentTerminal";
 
 // Cart line keys only need to be unique within this page. Not
@@ -70,6 +71,10 @@ export function PosPage() {
   const updateTransaction = useUpdateTransaction();
   const finalize = useFinalizeTransaction();
   const checkout = useCheckout();
+  const sendToKitchen = useSendToKitchen();
+  const [kitchenNotice, setKitchenNotice] = useState<{ tone: "ok" | "error"; text: string } | null>(null);
+  // A "Sent to Kitchen" notice belongs to the order it was shown for.
+  useEffect(() => setKitchenNotice(null), [resumingId]);
 
   if (!outletId) {
     return <p className="text-gray-500">Select an outlet to start selling.</p>;
@@ -96,6 +101,7 @@ export function PosPage() {
         unitPrice: Number(item.unitPrice),
         discountAmount: Number(item.discountAmount),
         lineTotal: Number(item.lineTotal),
+        kitchenPending: !item.kitchenPrintedAt,
       }))
     : localCart.map((item) => {
         const p = previewLine(item);
@@ -130,6 +136,7 @@ export function PosPage() {
   }
 
   function resetAll() {
+    setKitchenNotice(null);
     setLocalCart([]);
     setResumingId(null);
     setSelectedTable(null);
@@ -225,12 +232,30 @@ export function PosPage() {
     const created = await createDraft.mutateAsync({
       outletId: outletId!,
       tableId: selectedTable.id,
+      sendToKitchen: true,
       items: toItemInputs(),
       customerId: customerId || undefined,
       orderDiscountId: orderDiscountId || undefined,
     });
     setResumingId(created.id);
     setLocalCart([]);
+  }
+
+  async function handleSendToKitchen() {
+    if (!resumingTx) return;
+    setKitchenNotice(null);
+    try {
+      const result = await sendToKitchen.mutateAsync(resumingTx.id);
+      const printed = result.tickets.map((t) => t.stationName).join(", ");
+      setKitchenNotice({
+        tone: "ok",
+        text: printed
+          ? `Sent to ${printed}${result.unroutedCount ? ` · ${result.unroutedCount} item(s) on Kitchen Display only` : ""}`
+          : "Sent — shown on the Kitchen Display (no station printer set up)",
+      });
+    } catch (err) {
+      setKitchenNotice({ tone: "error", text: getErrorMessage(err) });
+    }
   }
 
   async function handleResumeHeld(t: TransactionDto) {
@@ -274,6 +299,7 @@ export function PosPage() {
     addItem.isPending ||
     updateItem.isPending ||
     removeItem.isPending ||
+    sendToKitchen.isPending ||
     finalize.isPending ||
     checkout.isPending;
 
@@ -342,6 +368,8 @@ export function PosPage() {
             onRemove={handleRemove}
             onHold={!resumingTx && !selectedTable ? handleHold : undefined}
             onSendToTable={!resumingTx && selectedTable ? handleSendToTable : undefined}
+            onSendToKitchen={resumingTx?.items.some((i) => !i.kitchenPrintedAt) ? handleSendToKitchen : undefined}
+            kitchenNotice={kitchenNotice}
             onPay={() => setShowPayment(true)}
             canHold={!resumingTx && !selectedTable && localCart.length > 0}
             canSendToTable={!resumingTx && !!selectedTable && localCart.length > 0}

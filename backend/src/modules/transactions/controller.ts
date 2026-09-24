@@ -3,6 +3,7 @@ import { asyncHandler } from "../../middleware/errorHandler";
 import { ApiError } from "../../lib/apiError";
 import * as service from "./service";
 import { printAfterSale } from "../printJobs/receipts";
+import { sendToKitchenSafely } from "../printJobs/kitchen";
 
 function requireUser(req: Request) {
   if (!req.user) throw ApiError.unauthorized();
@@ -19,19 +20,25 @@ export const getOne = asyncHandler(async (req: Request, res: Response) => {
 
 export const createDraft = asyncHandler(async (req: Request, res: Response) => {
   const user = requireUser(req);
-  res.status(201).json(await service.createDraft(user.userId, req.body));
+  const draft = await service.createDraft(user.userId, req.body);
+  if (req.body.sendToKitchen) await sendToKitchenSafely(draft.id, user.userId);
+  res.status(201).json(draft);
 });
 
 export const checkout = asyncHandler(async (req: Request, res: Response) => {
   const user = requireUser(req);
   const transaction = await service.checkout(user.userId, req.body);
   // Printing happens after the sale has committed and never fails the request.
+  // A walk-in sale goes to the kitchen as it's paid.
+  await sendToKitchenSafely(transaction.id, user.userId);
   res.status(201).json({ ...transaction, ...(await printAfterSale(transaction.id, req.body.terminalId, user.userId)) });
 });
 
 export const finalize = asyncHandler(async (req: Request, res: Response) => {
   const user = requireUser(req);
   const transaction = await service.finalize(Number(req.params.id), user.userId, req.body);
+  // Anything added to the tab since the last "Send to kitchen" goes now.
+  await sendToKitchenSafely(transaction.id, user.userId);
   res.json({ ...transaction, ...(await printAfterSale(transaction.id, req.body.terminalId, user.userId)) });
 });
 
@@ -40,11 +47,11 @@ export const addItem = asyncHandler(async (req: Request, res: Response) => {
 });
 
 export const updateItem = asyncHandler(async (req: Request, res: Response) => {
-  res.json(await service.updateItem(Number(req.params.id), Number(req.params.itemId), req.body));
+  res.json(await service.updateItem(Number(req.params.id), Number(req.params.itemId), req.body, req.user?.userId));
 });
 
 export const removeItem = asyncHandler(async (req: Request, res: Response) => {
-  res.json(await service.removeItem(Number(req.params.id), Number(req.params.itemId)));
+  res.json(await service.removeItem(Number(req.params.id), Number(req.params.itemId), req.user?.userId));
 });
 
 export const update = asyncHandler(async (req: Request, res: Response) => {

@@ -43,7 +43,7 @@ interface DraftInput {
 export function useCreateDraft() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (input: DraftInput) => (await apiClient.post<TransactionDto>("/transactions", input)).data,
+    mutationFn: async (input: DraftInput & { sendToKitchen?: boolean }) => (await apiClient.post<TransactionDto>("/transactions", input)).data,
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["transactions"] });
       qc.invalidateQueries({ queryKey: ["tables"] });

@@ -5,6 +5,7 @@ import { ApiError } from "../../lib/apiError";
 import { recordAudit } from "../../lib/audit";
 import { calculateLine, calculateTotals, round2 } from "./calculations";
 import { generateSimulatedEInvoice } from "./einvoice";
+import { CancelledKitchenItem, printKitchenCancellation } from "../printJobs/kitchen";
 import {
   AddItemInput,
   CheckoutInput,
@@ -221,11 +222,38 @@ export async function addItem(transactionId: number, input: AddItemInput) {
   });
 }
 
-export async function updateItem(transactionId: number, itemId: number, input: UpdateItemInput) {
-  return prisma.$transaction(async (tx) => {
+export async function updateItem(transactionId: number, itemId: number, input: UpdateItemInput, userId?: number) {
+  let cancelled: CancelledKitchenItem[] = [];
+  const result = await prisma.$transaction(async (tx) => {
     await ensureMutable(tx, transactionId);
     const item = await tx.transactionItem.findFirst({ where: { id: itemId, transactionId } });
     if (!item) throw ApiError.notFound("Transaction item not found");
+
+    // Once a line has gone out on a kitchen ticket its quantity is what the
+    // kitchen is making. Extra quantity becomes a new, unsent line (so the
+    // next "Send to kitchen" prints just the extra); less quantity prints a
+    // cancellation for the difference.
+    if (item.kitchenPrintedAt && input.quantity !== undefined && input.quantity !== item.quantity) {
+      if (input.quantity > item.quantity) {
+        const discountId = input.discountId !== undefined ? input.discountId : item.discountId;
+        await tx.transactionItem.create({
+          data: {
+            transactionId,
+            productId: item.productId,
+            variantId: item.variantId,
+            quantity: input.quantity - item.quantity,
+            discountId,
+            unitPrice: 0,
+            lineTotal: 0,
+          },
+        });
+        if (input.discountId !== undefined) {
+          await tx.transactionItem.update({ where: { id: itemId }, data: { discountId: input.discountId } });
+        }
+        return recalculate(tx, transactionId);
+      }
+      cancelled = [{ productId: item.productId, variantId: item.variantId, quantity: item.quantity - input.quantity }];
+    }
 
     await tx.transactionItem.update({
       where: { id: itemId },
@@ -236,17 +264,25 @@ export async function updateItem(transactionId: number, itemId: number, input: U
     });
     return recalculate(tx, transactionId);
   });
+  await printKitchenCancellation(transactionId, cancelled, userId ?? null);
+  return result;
 }
 
-export async function removeItem(transactionId: number, itemId: number) {
-  return prisma.$transaction(async (tx) => {
+export async function removeItem(transactionId: number, itemId: number, userId?: number) {
+  let cancelled: CancelledKitchenItem[] = [];
+  const result = await prisma.$transaction(async (tx) => {
     await ensureMutable(tx, transactionId);
     const item = await tx.transactionItem.findFirst({ where: { id: itemId, transactionId } });
     if (!item) throw ApiError.notFound("Transaction item not found");
 
+    if (item.kitchenPrintedAt) {
+      cancelled = [{ productId: item.productId, variantId: item.variantId, quantity: item.quantity }];
+    }
     await tx.transactionItem.delete({ where: { id: itemId } });
     return recalculate(tx, transactionId);
   });
+  await printKitchenCancellation(transactionId, cancelled, userId ?? null);
+  return result;
 }
 
 export async function updateTransaction(transactionId: number, input: UpdateTransactionInput) {

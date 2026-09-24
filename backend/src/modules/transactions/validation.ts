@@ -26,6 +26,12 @@ export const createDraftSchema = z.object({
 
 // terminalId: the device taking payment, so its receipt printer / cash
 // drawer can be used. Optional — omitted means browser printing.
+// sendToKitchen: fire kitchen tickets as soon as the draft is created (the
+// POS's "Send to Table"). Parked/held orders don't.
+export const createDraftRequestSchema = createDraftSchema.extend({
+  sendToKitchen: z.boolean().optional(),
+});
+
 export const checkoutSchema = createDraftSchema.extend({
   payments: z.array(paymentInput).min(1, "At least one payment is required"),
   terminalId: z.coerce.number().int().optional(),

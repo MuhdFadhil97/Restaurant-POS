@@ -83,6 +83,7 @@ export interface KitchenStation {
   outletId: number;
   name: string;
   printerId?: number | null;
+  printer?: { id: number; name: string; lastStatus: string | null } | null;
 }
 
 // ── Hardware ────────────────────────────────────────────────────────────
@@ -225,6 +226,8 @@ export interface TransactionItemDto {
   preparingAt?: string | null;
   readyAt?: string | null;
   servedAt?: string | null;
+  // Set once the item has gone out on a kitchen ticket.
+  kitchenPrintedAt?: string | null;
 }
 
 export interface PaymentDto {

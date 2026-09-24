@@ -2,6 +2,7 @@ import { prisma } from "../../lib/prisma";
 import { ApiError } from "../../lib/apiError";
 import { getOrCreateSystemUserId } from "../../lib/systemUser";
 import * as transactionsService from "../transactions/service";
+import { sendToKitchenSafely } from "../printJobs/kitchen";
 import { SubmitOrderInput } from "./validation";
 
 // Deliberately generic — never distinguishes "no such token" from "table
@@ -86,7 +87,9 @@ export async function getOrderStatus(token: string) {
 export async function submitOrder(token: string, items: SubmitOrderInput["items"]) {
   const table = await resolveTableByToken(token);
   const systemCashierId = await getOrCreateSystemUserId();
-  await transactionsService.createOrAppendQrOrder(table.outletId, table.id, items, systemCashierId);
+  const order = await transactionsService.createOrAppendQrOrder(table.outletId, table.id, items, systemCashierId);
+  // Self-orders skip the cashier, so they go straight to the kitchen.
+  await sendToKitchenSafely(order.id, null);
   return {
     table: { id: table.id, name: table.name },
     order: await getActiveOrderView(table.id),

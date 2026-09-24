@@ -12,6 +12,8 @@ export interface CartLineView {
   unitPrice: number;
   discountAmount: number;
   lineTotal: number;
+  // Saved on an open/held order but not yet sent to the kitchen.
+  kitchenPending?: boolean;
 }
 
 export interface CartTotals {
@@ -37,6 +39,8 @@ export function CartPanel({
   onRemove,
   onHold,
   onSendToTable,
+  onSendToKitchen,
+  kitchenNotice,
   onPay,
   canHold,
   canSendToTable,
@@ -56,6 +60,8 @@ export function CartPanel({
   onRemove: (key: string | number) => void;
   onHold?: () => void;
   onSendToTable?: () => void;
+  onSendToKitchen?: () => void;
+  kitchenNotice?: { tone: "ok" | "error"; text: string } | null;
   onPay: () => void;
   canHold: boolean;
   canSendToTable: boolean;
@@ -81,7 +87,14 @@ export function CartPanel({
         {lines.map((line) => (
           <div key={line.key} className="px-4 py-3 flex items-start justify-between gap-2">
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate">{line.name}</p>
+              <p className="text-sm font-medium truncate">
+                {line.name}
+                {line.kitchenPending && (
+                  <span className="ml-2 text-[10px] font-semibold uppercase text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded">
+                    Not sent
+                  </span>
+                )}
+              </p>
               {line.variantLabel && <p className="text-xs text-gray-400">{line.variantLabel}</p>}
               <p className="text-xs text-gray-400">{money(line.unitPrice)} each</p>
             </div>
@@ -150,6 +163,14 @@ export function CartPanel({
           </div>
         </div>
 
+        {kitchenNotice && (
+          <p className={`text-xs ${kitchenNotice.tone === "ok" ? "text-green-700" : "text-red-600"}`}>{kitchenNotice.text}</p>
+        )}
+        {onSendToKitchen && (
+          <Button variant="secondary" className="w-full" onClick={onSendToKitchen} disabled={busy}>
+            Send to Kitchen ({lines.filter((l) => l.kitchenPending).length})
+          </Button>
+        )}
         <div className="grid grid-cols-2 gap-2">
           {onHold && (
             <Button variant="secondary" onClick={onHold} disabled={!canHold || busy}>

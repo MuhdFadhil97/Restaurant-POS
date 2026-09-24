@@ -13,5 +13,15 @@ backend/keys/
 *.pem
 *.license
 
+# PM2 production process config — contains JWT_SECRET/LICENSE_KEY inline.
+backend/ecosystem.config.js
+
 # Fake thermal printer output (backend/scripts/fake-printer.ts)
 backend/fake-printer-output/
+
+# Local cloudflared tunnel runtime files
+.cloudflared.out
+.cloudflared.pid
+
+# Netlify CLI local state
+frontend/.netlify/

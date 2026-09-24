@@ -91,10 +91,6 @@ export function LoginPage() {
               {loading ? "Signing in..." : "Sign In"}
             </Button>
           </form>
-          <div className="my-6 border-t border-gray-100" />
-          <p className="text-center text-xs text-gray-400">
-            Demo: admin / manager / cashier / kitchen &mdash; password123
-          </p>
         </Card>
       </div>
     </div>

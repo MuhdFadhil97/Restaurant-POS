@@ -3,6 +3,7 @@ import { asyncHandler } from "../../middleware/errorHandler";
 import { ApiError } from "../../lib/apiError";
 import { optionalIdQuery } from "../../lib/query";
 import * as service from "./service";
+import { openCashDrawer } from "../printJobs/receipts";
 
 export const list = asyncHandler(async (req: Request, res: Response) => {
   const outletId = optionalIdQuery(req.query.outletId);
@@ -33,4 +34,8 @@ export const heartbeat = asyncHandler(async (req: Request, res: Response) => {
 
 export const regenerateDisplayToken = asyncHandler(async (req: Request, res: Response) => {
   res.json(await service.regenerateDisplayToken(Number(req.params.id), req.user));
+});
+
+export const openDrawer = asyncHandler(async (req: Request, res: Response) => {
+  res.status(201).json(await openCashDrawer(Number(req.params.id), req.user, req.body.reason));
 });

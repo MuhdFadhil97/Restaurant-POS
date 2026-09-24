@@ -28,4 +28,9 @@ export const env = {
   // the app runs unrestricted when neither is set and NODE_ENV isn't "production".
   licenseKey: process.env.LICENSE_KEY,
   licensePublicKey: normalizePem(process.env.LICENSE_PUBLIC_KEY),
+  // Public frontend URL (same value as the frontend's VITE_PUBLIC_URL). Only
+  // used to print the e-Invoice QR on thermal receipts; optional.
+  publicAppUrl: process.env.PUBLIC_APP_URL?.replace(/\/+$/, ""),
+  // Time zone for times printed on thermal receipts/tickets.
+  appTimeZone: process.env.APP_TIMEZONE ?? "Asia/Kuala_Lumpur",
 };

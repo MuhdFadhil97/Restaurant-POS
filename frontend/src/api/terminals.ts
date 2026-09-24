@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "./client";
-import { CustomerDisplayMode, TerminalDto } from "./types";
+import { CustomerDisplayMode, PrintJobDto, TerminalDto } from "./types";
 
 export interface TerminalInput {
   name?: string;
@@ -24,6 +24,8 @@ export function useTerminal(id?: number | null) {
     queryFn: async () => (await apiClient.get<TerminalDto>(`/terminals/${id}`)).data,
     enabled: !!id,
     retry: false,
+    // Keeps the receipt printer's health (lastStatus) fresh on the POS screen.
+    refetchInterval: 15_000,
   });
 }
 
@@ -66,4 +68,14 @@ export function useRegenerateDisplayToken() {
 
 export async function sendTerminalHeartbeat(id: number) {
   return (await apiClient.post<TerminalDto>(`/terminals/${id}/heartbeat`)).data;
+}
+
+// "No sale" drawer open — audited server-side.
+export function useOpenDrawer() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ terminalId, reason }: { terminalId: number; reason?: string }) =>
+      (await apiClient.post<PrintJobDto>(`/terminals/${terminalId}/drawer`, { reason })).data,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["print-jobs"] }),
+  });
 }

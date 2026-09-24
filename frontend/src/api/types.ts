@@ -239,6 +239,10 @@ export interface PaymentDto {
 
 export interface TransactionDto {
   id: number;
+  // Only on checkout/finalize responses: the receipt job queued for this
+  // device's receipt printer, or why queuing it failed.
+  receiptPrintJob?: PrintJobDto | null;
+  receiptPrintError?: string | null;
   outletId: number;
   outlet?: Outlet;
   tableId: number | null;

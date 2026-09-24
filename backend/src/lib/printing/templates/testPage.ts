@@ -1,4 +1,5 @@
 import { createDocument, finishDocument } from "../encoder";
+import { formatPrintTime } from "./receipt";
 
 export function renderTestPage(printer: {
   name: string;
@@ -22,7 +23,7 @@ export function renderTestPage(printer: {
   doc.leftRight("Connection", printer.connection);
   if (printer.host) doc.leftRight("Address", `${printer.host}:${printer.port}`);
   doc.leftRight("Paper", `${printer.paperWidth}mm / ${printer.charsPerLine} chars`);
-  doc.leftRight("Time", new Date().toLocaleString("en-MY"));
+  doc.leftRight("Time", formatPrintTime(new Date()));
   doc.drawLine();
   // A full-width ruler makes a wrong chars-per-line setting obvious at a glance.
   doc.println("1234567890".repeat(Math.ceil(printer.charsPerLine / 10)).slice(0, printer.charsPerLine));

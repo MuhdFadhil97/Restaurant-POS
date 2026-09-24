@@ -4,6 +4,7 @@ import { asyncHandler } from "../../middleware/errorHandler";
 import { ApiError } from "../../lib/apiError";
 import { optionalIdQuery } from "../../lib/query";
 import * as service from "./service";
+import * as receipts from "./receipts";
 
 const STATUSES = new Set<string>(Object.values(PrintJobStatus));
 
@@ -22,4 +23,8 @@ export const get = asyncHandler(async (req: Request, res: Response) => {
 
 export const retry = asyncHandler(async (req: Request, res: Response) => {
   res.json(await service.retryPrintJob(Number(req.params.id), req.user));
+});
+
+export const reprintReceipt = asyncHandler(async (req: Request, res: Response) => {
+  res.status(201).json(await receipts.reprintReceipt(req.body.transactionId, req.body.terminalId, req.user));
 });

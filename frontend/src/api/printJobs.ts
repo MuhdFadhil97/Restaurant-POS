@@ -32,3 +32,12 @@ export function useRetryPrintJob() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["print-jobs"] }),
   });
 }
+
+export function useReprintReceipt() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: { transactionId: number; terminalId: number }) =>
+      (await apiClient.post<PrintJobDto>("/print-jobs/receipt", input)).data,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["print-jobs"] }),
+  });
+}

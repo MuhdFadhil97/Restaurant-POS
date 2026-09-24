@@ -12,5 +12,9 @@ export const updateTerminalSchema = createTerminalSchema.omit({ outletId: true }
   isActive: z.boolean().optional(),
 });
 
+export const openDrawerSchema = z.object({
+  reason: z.string().trim().max(200).optional(),
+});
+
 export type CreateTerminalInput = z.infer<typeof createTerminalSchema>;
 export type UpdateTerminalInput = z.infer<typeof updateTerminalSchema>;

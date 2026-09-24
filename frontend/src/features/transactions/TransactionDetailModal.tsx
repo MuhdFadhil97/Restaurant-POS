@@ -6,6 +6,7 @@ import { Badge, Button, Modal, Spinner } from "@/components/ui";
 import { money } from "@/features/pos/cartMath";
 import { Receipt } from "./Receipt";
 import { VoidRefundModal } from "./VoidRefundModal";
+import { useReceiptPrinting } from "@/features/hardware/useReceiptPrinting";
 
 const statusColor: Record<string, "gray" | "green" | "red" | "yellow" | "blue"> = {
   HELD: "yellow",
@@ -28,6 +29,7 @@ export function TransactionDetailModal({
   const voidMutation = useVoidTransaction();
   const refundMutation = useRefundTransaction();
   const { data: transaction, isLoading } = useTransaction(transactionId ?? undefined);
+  const printing = useReceiptPrinting(transaction);
 
   if (!transactionId) return null;
 
@@ -131,10 +133,18 @@ export function TransactionDetailModal({
             </p>
           )}
 
+          {printing.status}
           <div className="flex gap-2 pt-2">
-            <Button variant="secondary" onClick={handlePrint}>
-              Print Receipt
-            </Button>
+            {/* Unpaid drafts have no receipt number yet, so they only get the browser print. */}
+            {printing.printer && transaction.status !== "HELD" && transaction.status !== "OPEN" ? (
+              <Button variant="secondary" onClick={printing.print} disabled={printing.printing}>
+                {printing.printLabel}
+              </Button>
+            ) : (
+              <Button variant="secondary" onClick={handlePrint}>
+                Print Receipt
+              </Button>
+            )}
             {canVoid && transaction.status === "COMPLETED" && (
               <Button variant="danger" onClick={() => setAction("void")}>
                 Void

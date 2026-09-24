@@ -1,6 +1,7 @@
 import { useTransaction } from "@/api/transactions";
 import { Button, Modal, Spinner } from "@/components/ui";
 import { Receipt } from "./Receipt";
+import { useReceiptPrinting } from "@/features/hardware/useReceiptPrinting";
 
 export function ReceiptViewModal({
   transactionId,
@@ -10,6 +11,7 @@ export function ReceiptViewModal({
   onClose: () => void;
 }) {
   const { data: transaction, isLoading } = useTransaction(transactionId ?? undefined);
+  const printing = useReceiptPrinting(transaction);
 
   if (!transactionId) return null;
 
@@ -20,9 +22,10 @@ export function ReceiptViewModal({
           <Spinner />
         ) : (
           <div className="space-y-4">
+            {printing.status}
             <Receipt transaction={transaction} />
-            <Button variant="secondary" className="w-full" onClick={() => window.print()}>
-              Print Receipt
+            <Button variant="secondary" className="w-full" onClick={printing.print} disabled={printing.printing}>
+              {printing.printer ? printing.printLabel : "Print Receipt"}
             </Button>
           </div>
         )}

@@ -11,8 +11,15 @@ export async function openSession(userId: number, input: OpenSessionInput) {
     throw ApiError.conflict("You already have an open cash session for this outlet");
   }
 
+  if (input.terminalId) {
+    const terminal = await prisma.terminal.findFirst({
+      where: { id: input.terminalId, outletId: input.outletId, deletedAt: null },
+    });
+    if (!terminal) throw ApiError.badRequest("Terminal belongs to a different outlet");
+  }
+
   return prisma.cashSession.create({
-    data: { userId, outletId: input.outletId, openingCash: input.openingCash },
+    data: { userId, outletId: input.outletId, openingCash: input.openingCash, terminalId: input.terminalId },
   });
 }
 

@@ -133,10 +133,12 @@ export function useFinalizeTransaction() {
     mutationFn: async ({
       id,
       payments,
+      terminalId,
     }: {
       id: number;
       payments: { method: PaymentMethod; amount: number; reference?: string }[];
-    }) => (await apiClient.post<TransactionDto>(`/transactions/${id}/finalize`, { payments })).data,
+      terminalId?: number;
+    }) => (await apiClient.post<TransactionDto>(`/transactions/${id}/finalize`, { payments, terminalId })).data,
     onSuccess: (data) => {
       qc.setQueryData(["transaction", data.id], data);
       qc.invalidateQueries({ queryKey: ["transactions"] });
@@ -151,7 +153,10 @@ export function useCheckout() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (
-      input: DraftInput & { payments: { method: PaymentMethod; amount: number; reference?: string }[] }
+      input: DraftInput & {
+        payments: { method: PaymentMethod; amount: number; reference?: string }[];
+        terminalId?: number;
+      }
     ) => (await apiClient.post<TransactionDto>("/transactions/checkout", input)).data,
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["transactions"] });

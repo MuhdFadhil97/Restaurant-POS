@@ -3,7 +3,7 @@ import { authenticate, requireOutletAccess } from "../../middleware/auth";
 import { requireRole } from "../../middleware/roleGuard";
 import { validate } from "../../middleware/validate";
 import { optionalIdQuery } from "../../lib/query";
-import { createTerminalSchema, updateTerminalSchema } from "./validation";
+import { createTerminalSchema, openDrawerSchema, updateTerminalSchema } from "./validation";
 import * as controller from "./controller";
 
 const router = Router();
@@ -23,6 +23,12 @@ router.patch("/:id", requireRole("ADMIN", "MANAGER"), validate({ body: updateTer
 router.delete("/:id", requireRole("ADMIN", "MANAGER"), controller.remove);
 // Any signed-in role on the device (usually a cashier) keeps the terminal "online".
 router.post("/:id/heartbeat", controller.heartbeat);
+router.post(
+  "/:id/drawer",
+  requireRole("ADMIN", "MANAGER", "CASHIER"),
+  validate({ body: openDrawerSchema }),
+  controller.openDrawer
+);
 router.post("/:id/regenerate-display-token", requireRole("ADMIN", "MANAGER"), controller.regenerateDisplayToken);
 
 export default router;

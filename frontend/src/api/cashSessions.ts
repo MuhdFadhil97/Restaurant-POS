@@ -22,7 +22,7 @@ export function useCashSessions(outletId?: number) {
 export function useOpenCashSession() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (input: { outletId: number; openingCash: number }) =>
+    mutationFn: async (input: { outletId: number; openingCash: number; terminalId?: number }) =>
       (await apiClient.post<CashSession>("/cash-sessions", input)).data,
     onSuccess: () => qc.invalidateQueries({ queryKey: ["cash-session-current"] }),
   });

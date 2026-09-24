@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { asyncHandler } from "../../middleware/errorHandler";
 import { ApiError } from "../../lib/apiError";
 import * as service from "./service";
+import { printAfterSale } from "../printJobs/receipts";
 
 function requireUser(req: Request) {
   if (!req.user) throw ApiError.unauthorized();
@@ -23,12 +24,15 @@ export const createDraft = asyncHandler(async (req: Request, res: Response) => {
 
 export const checkout = asyncHandler(async (req: Request, res: Response) => {
   const user = requireUser(req);
-  res.status(201).json(await service.checkout(user.userId, req.body));
+  const transaction = await service.checkout(user.userId, req.body);
+  // Printing happens after the sale has committed and never fails the request.
+  res.status(201).json({ ...transaction, ...(await printAfterSale(transaction.id, req.body.terminalId, user.userId)) });
 });
 
 export const finalize = asyncHandler(async (req: Request, res: Response) => {
   const user = requireUser(req);
-  res.json(await service.finalize(Number(req.params.id), user.userId, req.body));
+  const transaction = await service.finalize(Number(req.params.id), user.userId, req.body);
+  res.json({ ...transaction, ...(await printAfterSale(transaction.id, req.body.terminalId, user.userId)) });
 });
 
 export const addItem = asyncHandler(async (req: Request, res: Response) => {

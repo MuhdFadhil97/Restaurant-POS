@@ -31,9 +31,16 @@ import { ReceiptPreviewModal } from "./ReceiptPreviewModal";
 import { LocalCartItem, previewLine, previewTotals } from "./cartMath";
 import { ShiftBar } from "./ShiftBar";
 import { DeviceBanner } from "../hardware/DeviceBanner";
+import { useCurrentTerminal } from "../hardware/useCurrentTerminal";
+
+// Cart line keys only need to be unique within this page. Not
+// crypto.randomUUID(): browsers only expose it on secure origins, so it
+// crashes the POS when opened over plain http on the LAN IP (tablets, 2nd tills).
+let nextCartKey = 0;
 
 export function PosPage() {
   const outletId = useOutletStore((s) => s.activeOutletId);
+  const { terminal } = useCurrentTerminal(outletId);
 
   const { data: products, isLoading: productsLoading } = useProducts(outletId ?? undefined);
   const { data: outlets } = useOutlets();
@@ -142,7 +149,7 @@ export function PosPage() {
         copy[idx] = { ...copy[idx], quantity: copy[idx].quantity + 1 };
         return copy;
       }
-      return [...prev, { key: crypto.randomUUID(), product, variant, quantity: 1, discount: null }];
+      return [...prev, { key: `line-${++nextCartKey}`, product, variant, quantity: 1, discount: null }];
     });
   }
 
@@ -240,7 +247,7 @@ export function PosPage() {
     try {
       let completed: TransactionDto;
       if (resumingTx) {
-        completed = await finalize.mutateAsync({ id: resumingTx.id, payments });
+        completed = await finalize.mutateAsync({ id: resumingTx.id, payments, terminalId: terminal?.id });
       } else {
         completed = await checkout.mutateAsync({
           outletId: outletId!,
@@ -249,6 +256,7 @@ export function PosPage() {
           customerId: customerId || undefined,
           orderDiscountId: orderDiscountId || undefined,
           payments,
+          terminalId: terminal?.id,
         });
       }
       setShowPayment(false);

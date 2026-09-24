@@ -1,0 +1,20 @@
+{
+  "name": "pos-print-bridge",
+  "version": "0.1.0",
+  "private": true,
+  "type": "commonjs",
+  "description": "On-site agent that forwards POS print jobs to LAN printers when the backend is hosted remotely. Runs unattended on a PC in the restaurant.",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "@types/node": "^22.7.4",
+    "tsx": "^4.19.1",
+    "typescript": "^5.6.2"
+  }
+}

@@ -4,12 +4,14 @@ import { Tabs } from "@/components/ui";
 import { ThisDeviceSection } from "./ThisDeviceSection";
 import { TerminalsSection } from "./TerminalsSection";
 import { PrintersSection } from "./PrintersSection";
+import { PrintBridgesSection } from "./PrintBridgesSection";
 import { PrintJobsSection } from "./PrintJobsSection";
 
 const sections = [
   { key: "device", label: "This Device" },
   { key: "terminals", label: "Terminals" },
   { key: "printers", label: "Printers" },
+  { key: "bridges", label: "Print Bridges" },
   { key: "jobs", label: "Print Jobs" },
 ] as const;
 
@@ -25,6 +27,7 @@ export function HardwareTab() {
       {active === "device" && <ThisDeviceSection outletId={outletId} />}
       {active === "terminals" && <TerminalsSection outletId={outletId} />}
       {active === "printers" && <PrintersSection outletId={outletId} />}
+      {active === "bridges" && <PrintBridgesSection outletId={outletId} />}
       {active === "jobs" && <PrintJobsSection outletId={outletId} />}
     </div>
   );

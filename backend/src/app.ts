@@ -40,6 +40,7 @@ import terminalRoutes from "./modules/terminals/routes";
 import printerRoutes from "./modules/printers/routes";
 import printJobRoutes from "./modules/printJobs/routes";
 import customerDisplayRoutes from "./modules/customerDisplay/routes";
+import { agentRouter as printBridgeAgentRoutes, staffRouter as printBridgeStaffRoutes } from "./modules/printBridge/routes";
 
 export const app = express();
 
@@ -79,6 +80,8 @@ app.use("/api/terminals", terminalRoutes);
 app.use("/api/printers", printerRoutes);
 app.use("/api/print-jobs", printJobRoutes);
 app.use("/api/customer-display", customerDisplayRoutes);
+app.use("/api/print-bridges", printBridgeStaffRoutes);
+app.use("/api/print-bridge", printBridgeAgentRoutes);
 app.use("/api/suppliers", supplierRoutes);
 app.use("/api/supplier-products", supplierProductRoutes);
 app.use("/api/purchase-orders", purchaseOrderRoutes);

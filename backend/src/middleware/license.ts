@@ -2,6 +2,7 @@ import { NextFunction, Request, Response } from "express";
 import { prisma } from "../lib/prisma";
 import { ApiError } from "../lib/apiError";
 import { getLicenseStatus } from "../lib/license";
+import { asyncHandler } from "./errorHandler";
 
 // Paths that must keep working even when the license is restricted — otherwise
 // nobody could ever find out *why* the system is locked, or renew it.
@@ -26,7 +27,12 @@ export function requireValidLicense(req: Request, _res: Response, next: NextFunc
   next();
 }
 
-export async function enforceOutletLimit(_req: Request, _res: Response, next: NextFunction) {
+// Wrapped with asyncHandler at definition (not left to each call site to
+// remember): an async middleware that throws instead of calling next(err)
+// rejects a promise Express never awaits, which crashes the whole process
+// with an unhandled rejection rather than returning a 403. Found the hard
+// way — see the 2026-09-24 memory.md entry.
+async function enforceOutletLimitHandler(_req: Request, _res: Response, next: NextFunction) {
   const status = getLicenseStatus();
   if (!status.payload) return next(); // dev bypass, or already blocked by requireValidLicense above
 
@@ -38,8 +44,9 @@ export async function enforceOutletLimit(_req: Request, _res: Response, next: Ne
   }
   next();
 }
+export const enforceOutletLimit = asyncHandler(enforceOutletLimitHandler);
 
-export async function enforceUserLimit(_req: Request, _res: Response, next: NextFunction) {
+async function enforceUserLimitHandler(_req: Request, _res: Response, next: NextFunction) {
   const status = getLicenseStatus();
   if (!status.payload) return next();
 
@@ -51,3 +58,4 @@ export async function enforceUserLimit(_req: Request, _res: Response, next: Next
   }
   next();
 }
+export const enforceUserLimit = asyncHandler(enforceUserLimitHandler);

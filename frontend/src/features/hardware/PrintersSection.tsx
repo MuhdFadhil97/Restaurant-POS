@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { PrinterInput, useCreatePrinter, useDeletePrinter, usePrinters, useTestPrinter, useUpdatePrinter } from "@/api/printers";
 import { useTerminals } from "@/api/terminals";
+import { usePrintBridges } from "@/api/printBridges";
 import { usePrintJob } from "@/api/printJobs";
 import { getErrorMessage } from "@/api/client";
 import { PrinterConnection, PrinterDto } from "@/api/types";
@@ -155,11 +156,13 @@ function PrinterFormModal({
   onSubmit: (input: PrinterInput) => Promise<void>;
 }) {
   const { data: terminals } = useTerminals(open ? outletId : undefined);
+  const { data: bridges } = usePrintBridges(open ? outletId : undefined);
   const [name, setName] = useState("");
   const [connection, setConnection] = useState<PrinterConnection>("NETWORK_DIRECT");
   const [host, setHost] = useState("");
   const [port, setPort] = useState("9100");
   const [terminalId, setTerminalId] = useState("");
+  const [bridgeId, setBridgeId] = useState("");
   const [paperWidth, setPaperWidth] = useState<58 | 80>(80);
   const [charsPerLine, setCharsPerLine] = useState("48");
   const [isActive, setIsActive] = useState(true);
@@ -174,6 +177,7 @@ function PrinterFormModal({
       setHost(initial?.host ?? "");
       setPort(initial?.port?.toString() ?? "9100");
       setTerminalId(initial?.terminalId?.toString() ?? "");
+      setBridgeId(initial?.bridgeId?.toString() ?? "");
       setPaperWidth(initial?.paperWidth ?? 80);
       setCharsPerLine(initial?.charsPerLine?.toString() ?? "48");
       setIsActive(initial?.isActive ?? true);
@@ -198,6 +202,7 @@ function PrinterFormModal({
         host: connection === "TERMINAL_LOCAL" ? null : host.trim(),
         port: Number(port) || 9100,
         terminalId: connection === "TERMINAL_LOCAL" && terminalId ? Number(terminalId) : null,
+        bridgeId: connection === "NETWORK_BRIDGE" && bridgeId ? Number(bridgeId) : null,
         paperWidth,
         charsPerLine: Number(charsPerLine),
         ...(initial ? { isActive } : {}),
@@ -222,9 +227,7 @@ function PrinterFormModal({
           <span className="text-gray-600">Connection</span>
           <Select value={connection} onChange={(e) => setConnection(e.target.value as PrinterConnection)}>
             <option value="NETWORK_DIRECT">{connectionLabels.NETWORK_DIRECT}</option>
-            <option value="NETWORK_BRIDGE" disabled>
-              {connectionLabels.NETWORK_BRIDGE} (coming soon)
-            </option>
+            <option value="NETWORK_BRIDGE">{connectionLabels.NETWORK_BRIDGE}</option>
             <option value="TERMINAL_LOCAL" disabled>
               {connectionLabels.TERMINAL_LOCAL} (coming soon)
             </option>
@@ -241,6 +244,25 @@ function PrinterFormModal({
               <Input type="number" value={port} onChange={(e) => setPort(e.target.value)} required />
             </label>
           </div>
+        )}
+        {connection === "NETWORK_BRIDGE" && (
+          <label className="block text-sm">
+            <span className="text-gray-600">Print bridge</span>
+            {bridges?.length === 0 ? (
+              <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                No print bridges set up yet — add one under the Print Bridges tab first.
+              </p>
+            ) : (
+              <Select value={bridgeId} onChange={(e) => setBridgeId(e.target.value)} required>
+                <option value="">Choose a print bridge…</option>
+                {bridges?.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.name}
+                  </option>
+                ))}
+              </Select>
+            )}
+          </label>
         )}
         {connection === "TERMINAL_LOCAL" && (
           <label className="block text-sm">

@@ -403,7 +403,7 @@ async function validateAndConsumeDiscounts(tx: Tx, transactionId: number) {
 }
 
 interface PaymentInput {
-  method: "CASH" | "CARD" | "EWALLET" | "GIFT_CARD" | "LOYALTY_POINTS";
+  method: "CASH" | "CARD" | "EWALLET" | "GIFT_CARD" | "LOYALTY_POINTS" | "ONLINE";
   amount: number;
   reference?: string;
   remark?: string;
@@ -574,6 +574,62 @@ export async function checkout(cashierId: number, input: CheckoutInput) {
     return tx.transaction.update({
       where: { id: created.id },
       data: { status: "COMPLETED", pointsEarned, pointsRedeemed, receiptNumber, ...einvoiceFields(recalculated.outlet) },
+      include: detailInclude,
+    });
+  });
+}
+
+// Delivery-order entry point (see deliveryOrders/service.ts). The platform
+// has already collected payment, so — unlike checkout() — this both creates
+// and completes the transaction in one step, recording a single ONLINE
+// payment for the full total rather than taking payments from the caller.
+// Reuses the same recalculate/stock/loyalty/receipt/e-invoice pipeline as
+// checkout() so delivery sales report identically to POS/QR ones, only
+// origin/cashier/table differ.
+export async function createDeliveryTransaction(
+  outletId: number,
+  systemCashierId: number,
+  items: { productId: number; variantId?: number; quantity: number }[],
+  externalOrderId: string
+) {
+  return prisma.$transaction(async (tx) => {
+    const created = await tx.transaction.create({
+      data: {
+        outletId,
+        cashierId: systemCashierId,
+        status: "OPEN",
+        origin: "DELIVERY",
+        items: {
+          create: items.map((item) => ({
+            productId: item.productId,
+            variantId: item.variantId,
+            quantity: item.quantity,
+            unitPrice: 0,
+            lineTotal: 0,
+          })),
+        },
+      },
+    });
+
+    const recalculated = await recalculate(tx, created.id);
+
+    await decrementStockForItems(
+      tx,
+      outletId,
+      recalculated.items.map((i) => ({ productId: i.productId, variantId: i.variantId, quantity: i.quantity })),
+      systemCashierId
+    );
+
+    const pointsEarned = await accrueLoyaltyPoints(tx, outletId, null, Number(recalculated.total));
+    await processPayments(tx, created.id, outletId, null, [
+      { method: "ONLINE", amount: Number(recalculated.total), reference: externalOrderId },
+    ]);
+
+    const receiptNumber = await nextReceiptNumber(tx);
+
+    return tx.transaction.update({
+      where: { id: created.id },
+      data: { status: "COMPLETED", pointsEarned, receiptNumber, ...einvoiceFields(recalculated.outlet) },
       include: detailInclude,
     });
   });

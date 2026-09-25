@@ -35,13 +35,20 @@ export async function getCustomerHistory(id: number) {
   });
 }
 
+// marketingConsentAt tracks when consent was actually granted (PDPA
+// audit trail), so it's derived here rather than accepted from the client.
+function withConsentTimestamp<T extends { marketingConsent?: boolean }>(input: T) {
+  if (input.marketingConsent === undefined) return input;
+  return { ...input, marketingConsentAt: input.marketingConsent ? new Date() : null };
+}
+
 export async function createCustomer(input: CreateCustomerInput) {
-  return prisma.customer.create({ data: input });
+  return prisma.customer.create({ data: withConsentTimestamp(input) });
 }
 
 export async function updateCustomer(id: number, input: UpdateCustomerInput) {
   await getCustomer(id);
-  return prisma.customer.update({ where: { id }, data: input });
+  return prisma.customer.update({ where: { id }, data: withConsentTimestamp(input) });
 }
 
 export async function deleteCustomer(id: number) {

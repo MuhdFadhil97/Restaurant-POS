@@ -143,6 +143,7 @@ function CustomerFormModal({
   const [email, setEmail] = useState("");
   const [address, setAddress] = useState("");
   const [source, setSource] = useState<CustomerSource | "">("");
+  const [marketingConsent, setMarketingConsent] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   // The modal stays mounted while hidden, so re-seed fields from `initial`
@@ -156,6 +157,7 @@ function CustomerFormModal({
       setEmail(initial?.email ?? "");
       setAddress(initial?.address ?? "");
       setSource(initial?.source ?? "");
+      setMarketingConsent(initial?.marketingConsent ?? false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, initial]);
@@ -172,6 +174,7 @@ function CustomerFormModal({
         email: email || undefined,
         address: address || undefined,
         source: source || undefined,
+        marketingConsent,
       });
     } finally {
       setSubmitting(false);
@@ -215,6 +218,17 @@ function CustomerFormModal({
             <option value="THIRD_PARTY">Third Party (Grab & Food Panda)</option>
             <option value="ONLINE">Online</option>
           </Select>
+        </div>
+        <div>
+          <label className="flex items-center gap-2 text-sm text-gray-700">
+            <input
+              type="checkbox"
+              checked={marketingConsent}
+              onChange={(e) => setMarketingConsent(e.target.checked)}
+              className="rounded border-gray-300"
+            />
+            Marketing opt-in (email campaigns)
+          </label>
         </div>
         {initial?.createdAt && (
           <p className="text-xs text-gray-400">

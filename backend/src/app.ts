@@ -41,11 +41,28 @@ import printerRoutes from "./modules/printers/routes";
 import printJobRoutes from "./modules/printJobs/routes";
 import customerDisplayRoutes from "./modules/customerDisplay/routes";
 import { agentRouter as printBridgeAgentRoutes, staffRouter as printBridgeStaffRoutes } from "./modules/printBridge/routes";
+import { publicRouter as reservationPublicRoutes, staffRouter as reservationStaffRoutes } from "./modules/reservations/routes";
+import deliveryPlatformRoutes from "./modules/deliveryPlatforms/routes";
+import { staffRouter as deliveryOrderStaffRoutes, webhookRouter as deliveryWebhookRoutes } from "./modules/deliveryOrders/routes";
+import accountingExportRoutes from "./modules/accountingExport/routes";
+import segmentRoutes from "./modules/segments/routes";
+import campaignRoutes from "./modules/campaigns/routes";
+
+declare global {
+  namespace Express {
+    interface Request {
+      rawBody?: Buffer;
+    }
+  }
+}
 
 export const app = express();
 
 app.use(cors({ origin: env.corsOrigin, credentials: true }));
-app.use(express.json());
+// Delivery webhook signature verification needs the exact bytes the platform
+// signed, before JSON parsing normalizes whitespace/key order — stash them
+// on every request (cheap; only the webhook route reads it).
+app.use(express.json({ verify: (req, _res, buf) => { (req as express.Request).rawBody = buf; } }));
 if (env.nodeEnv !== "test") {
   app.use(morgan(env.nodeEnv === "development" ? "dev" : "combined"));
 }
@@ -66,6 +83,11 @@ app.use("/api/products", productRoutes);
 app.use("/api/inventory", inventoryRoutes);
 app.use("/api/tables", tableRoutes);
 app.use("/api/qr-order", qrOrderRoutes);
+app.use("/api/reservations", reservationStaffRoutes);
+app.use("/api/public/reservations", reservationPublicRoutes);
+app.use("/api/delivery-platforms", deliveryPlatformRoutes);
+app.use("/api/delivery-orders", deliveryOrderStaffRoutes);
+app.use("/api/delivery/webhooks", deliveryWebhookRoutes);
 app.use("/api/customers", customerRoutes);
 app.use("/api/discounts", discountRoutes);
 app.use("/api/tax-rates", taxRateRoutes);
@@ -93,6 +115,9 @@ app.use("/api/shift-templates", shiftTemplateRoutes);
 app.use("/api/shift-schedules", shiftScheduleRoutes);
 app.use("/api/staff-attendance", staffAttendanceRoutes);
 app.use("/api/einvoice", einvoiceRoutes);
+app.use("/api/accounting-export", accountingExportRoutes);
+app.use("/api/segments", segmentRoutes);
+app.use("/api/campaigns", campaignRoutes);
 
 app.use(notFoundHandler);
 app.use(errorHandler);

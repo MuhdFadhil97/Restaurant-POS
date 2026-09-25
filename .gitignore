@@ -25,3 +25,4 @@ backend/fake-printer-output/
 
 # Netlify CLI local state
 frontend/.netlify/
+.netlify/

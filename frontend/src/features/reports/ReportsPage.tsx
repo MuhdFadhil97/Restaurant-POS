@@ -7,8 +7,10 @@ import { PurchasingReportsTab } from "./PurchasingReportsTab";
 import { CashShiftReportsTab } from "./CashShiftReportsTab";
 import { StaffAttendanceReportsTab } from "./StaffAttendanceReportsTab";
 import { CustomersReportsTab } from "./CustomersReportsTab";
+import { DeliveryReportsTab } from "./DeliveryReportsTab";
 import { TaxComplianceReportsTab } from "./TaxComplianceReportsTab";
 import { AuditReportsTab } from "./AuditReportsTab";
+import { AccountingExportTab } from "./AccountingExportTab";
 
 const tabs = [
   { key: "sales", label: "Sales", component: SalesReportsTab },
@@ -18,8 +20,10 @@ const tabs = [
   { key: "cash", label: "Cash & Shift", component: CashShiftReportsTab },
   { key: "attendance", label: "Staff & Attendance", component: StaffAttendanceReportsTab },
   { key: "customers", label: "Customers", component: CustomersReportsTab },
+  { key: "delivery", label: "Delivery", component: DeliveryReportsTab },
   { key: "tax", label: "Tax & Compliance", component: TaxComplianceReportsTab },
   { key: "audit", label: "Audit", component: AuditReportsTab },
+  { key: "accounting", label: "Accounting Export", component: AccountingExportTab },
 ] as const;
 
 export function ReportsPage() {

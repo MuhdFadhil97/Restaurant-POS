@@ -12,15 +12,19 @@ export function SalesReportsTab() {
   const [range, setRange] = useState({ from: startOfTodayDateInput(), to: startOfTodayDateInput() });
   const [groupBy, setGroupBy] = useState<"day" | "week" | "month">("day");
 
-  if (!outletId) return <p className="text-gray-500">Select an outlet first.</p>;
-
   const isoRange = toIsoRange(range);
-  const params = { outletId, ...isoRange };
+  // outletId can still be undefined on first render (outlet store hasn't
+  // hydrated yet) — these hooks must run unconditionally every render (Rules
+  // of Hooks), so a placeholder 0 stands in for `params.outletId` and each
+  // hook's own `enabled: !!params.outletId` keeps it from actually fetching.
+  const params = { outletId: outletId ?? 0, ...isoRange };
 
   const summary = useSalesSummary({ ...params, groupBy });
   const topProducts = useTopProducts({ ...params, limit: 10 });
   const byCashier = useSalesByCashier(params);
   const byPaymentMethod = useSalesByPaymentMethod(params);
+
+  if (!outletId) return <p className="text-gray-500">Select an outlet first.</p>;
 
   return (
     <div className="space-y-6">

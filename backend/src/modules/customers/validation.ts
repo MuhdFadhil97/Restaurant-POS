@@ -13,6 +13,7 @@ export const createCustomerSchema = z.object({
   email: z.string().email().optional(),
   address: z.string().optional(),
   source: z.enum(["WALK_IN", "SOCIAL_MEDIA", "REFERRAL", "THIRD_PARTY", "ONLINE"]).optional(),
+  marketingConsent: z.boolean().optional(),
 });
 
 export const updateCustomerSchema = createCustomerSchema.partial();

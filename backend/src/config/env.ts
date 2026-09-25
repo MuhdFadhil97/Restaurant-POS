@@ -33,4 +33,14 @@ export const env = {
   publicAppUrl: process.env.PUBLIC_APP_URL?.replace(/\/+$/, ""),
   // Time zone for times printed on thermal receipts/tickets.
   appTimeZone: process.env.APP_TIMEZONE ?? "Asia/Kuala_Lumpur",
+  // CRM campaign email delivery (see lib/notifications/emailProvider.ts). All
+  // optional — when smtpHost is unset, campaign sends are logged instead of
+  // actually delivered (same "simulate when real infra is unavailable"
+  // convention as the simulated e-Invoice / CUSTOM-only delivery adapter).
+  smtpHost: process.env.SMTP_HOST,
+  smtpPort: Number(process.env.SMTP_PORT ?? 587),
+  smtpUser: process.env.SMTP_USER,
+  smtpPass: process.env.SMTP_PASS,
+  smtpFromEmail: process.env.SMTP_FROM_EMAIL ?? "no-reply@pos.local",
+  smtpFromName: process.env.SMTP_FROM_NAME ?? "Restaurant POS",
 };

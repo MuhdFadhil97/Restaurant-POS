@@ -47,6 +47,83 @@ enum TransactionStatus {
 enum TransactionOrigin {
   POS // created by a staff member
   QR // created by a customer via table QR self-order
+  DELIVERY // created from a delivery platform webhook
+}
+
+enum DeliveryProvider {
+  GRAB
+  FOODPANDA
+  DOORDASH
+  CUSTOM // generic webhook, e.g. a self-built ordering site or an aggregator without a dedicated adapter
+}
+
+enum DeliveryOrderStatus {
+  PENDING // just received, awaiting accept/reject
+  ACCEPTED // kitchen is preparing it
+  REJECTED
+  READY // prepared, awaiting courier pickup
+  PICKED_UP // courier collected it — terminal state
+  CANCELLED // cancelled after acceptance (e.g. by the platform/customer)
+}
+
+enum AccountingExportFormat {
+  QUICKBOOKS_CSV
+  XERO_CSV
+  GENERIC_CSV
+}
+
+enum AccountingExportStatus {
+  COMPLETED
+  FAILED
+}
+
+enum CampaignChannel {
+  EMAIL
+  SMS // declared for forward-compat; no adapter yet, same convention as DeliveryProvider's unimplemented values
+  PUSH
+}
+
+enum CampaignTriggerType {
+  MANUAL
+  SCHEDULED // declared for forward-compat; no scheduler exists yet, sending is rejected for non-MANUAL campaigns
+  EVENT_BIRTHDAY
+  EVENT_WINBACK
+}
+
+enum CampaignStatus {
+  DRAFT
+  SENDING
+  COMPLETED
+  FAILED
+}
+
+enum CampaignSendStatus {
+  SENT
+  FAILED
+  SKIPPED_NO_CONSENT
+  SKIPPED_NO_CONTACT
+}
+
+enum SegmentRuleType {
+  ALL_CUSTOMERS
+  NO_VISIT_SINCE_DAYS
+  BIRTHDAY_WITHIN_DAYS
+  TOTAL_SPEND_ABOVE
+}
+
+enum ReservationStatus {
+  PENDING
+  CONFIRMED
+  SEATED
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+enum ReservationSource {
+  STAFF
+  ONLINE
+  PHONE
 }
 
 enum DiscountType {
@@ -65,6 +142,7 @@ enum PaymentMethod {
   EWALLET
   GIFT_CARD
   LOYALTY_POINTS
+  ONLINE // settled by a delivery/online-ordering platform, not collected at the till
 }
 
 enum CashSessionStatus {
@@ -155,27 +233,31 @@ model Outlet {
   updatedAt DateTime  @updatedAt @map("updated_at")
   deletedAt DateTime? @map("deleted_at")
 
-  userAccess          UserOutlet[]
-  productStocks       ProductStock[]
-  inventoryMovements  InventoryMovement[]
-  tables              Table[]
-  transactions        Transaction[]
-  taxRates            TaxRate[]
-  cashSessions        CashSession[]
-  auditLogs           AuditLog[]
-  kitchenStations     KitchenStation[]
-  purchaseOrders      PurchaseOrder[]
-  goodsReceivedNotes  GoodsReceivedNote[]
-  transfersOut        StockTransfer[]      @relation("TransferFromOutlet")
-  transfersIn         StockTransfer[]      @relation("TransferToOutlet")
-  stockTakes          StockTake[]
-  staffShiftTemplates StaffShiftTemplate[]
-  staffShiftSchedules StaffShiftSchedule[]
-  staffAttendance     StaffAttendance[]
-  terminals           Terminal[]
-  printers            Printer[]
-  printBridges        PrintBridge[]
-  printJobs           PrintJob[]
+  userAccess           UserOutlet[]
+  productStocks        ProductStock[]
+  inventoryMovements   InventoryMovement[]
+  tables               Table[]
+  transactions         Transaction[]
+  reservations         Reservation[]
+  taxRates             TaxRate[]
+  cashSessions         CashSession[]
+  auditLogs            AuditLog[]
+  kitchenStations      KitchenStation[]
+  purchaseOrders       PurchaseOrder[]
+  goodsReceivedNotes   GoodsReceivedNote[]
+  transfersOut         StockTransfer[]       @relation("TransferFromOutlet")
+  transfersIn          StockTransfer[]       @relation("TransferToOutlet")
+  stockTakes           StockTake[]
+  staffShiftTemplates  StaffShiftTemplate[]
+  staffShiftSchedules  StaffShiftSchedule[]
+  staffAttendance      StaffAttendance[]
+  terminals            Terminal[]
+  printers             Printer[]
+  printBridges         PrintBridge[]
+  printJobs            PrintJob[]
+  deliveryPlatforms    DeliveryPlatform[]
+  deliveryOrders       DeliveryOrder[]
+  accountingExportRuns AccountingExportRun[]
 
   @@map("outlets")
 }
@@ -199,21 +281,24 @@ model User {
 
   outletAccess            UserOutlet[]
   createdPrintJobs        PrintJob[]
-  cashierTransactions     Transaction[]        @relation("CashierTransactions")
-  voidedTransactions      Transaction[]        @relation("VoidedByUser")
-  approvedTransactions    Transaction[]        @relation("ApprovedByUser")
+  cashierTransactions     Transaction[]         @relation("CashierTransactions")
+  voidedTransactions      Transaction[]         @relation("VoidedByUser")
+  approvedTransactions    Transaction[]         @relation("ApprovedByUser")
   inventoryMovements      InventoryMovement[]
   cashSessions            CashSession[]
   auditLogs               AuditLog[]
-  purchaseOrdersCreated   PurchaseOrder[]      @relation("PurchaseOrderCreatedBy")
-  purchaseOrdersApproved  PurchaseOrder[]      @relation("PurchaseOrderApprovedBy")
+  purchaseOrdersCreated   PurchaseOrder[]       @relation("PurchaseOrderCreatedBy")
+  purchaseOrdersApproved  PurchaseOrder[]       @relation("PurchaseOrderApprovedBy")
   goodsReceivedNotes      GoodsReceivedNote[]
   stockTransfersRequested StockTransfer[]
-  stockTakesStarted       StockTake[]          @relation("StockTakeStartedBy")
-  stockTakesCompleted     StockTake[]          @relation("StockTakeCompletedBy")
-  staffShiftSchedules     StaffShiftSchedule[] @relation("StaffShiftScheduleUser")
-  createdShiftSchedules   StaffShiftSchedule[] @relation("StaffShiftScheduleCreatedBy")
+  stockTakesStarted       StockTake[]           @relation("StockTakeStartedBy")
+  stockTakesCompleted     StockTake[]           @relation("StockTakeCompletedBy")
+  staffShiftSchedules     StaffShiftSchedule[]  @relation("StaffShiftScheduleUser")
+  createdShiftSchedules   StaffShiftSchedule[]  @relation("StaffShiftScheduleCreatedBy")
   staffAttendance         StaffAttendance[]
+  accountingExportRuns    AccountingExportRun[]
+  customerSegmentsCreated CustomerSegment[]
+  campaignsCreated        Campaign[]
 
   @@map("users")
 }
@@ -243,6 +328,12 @@ model ProductCategory {
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @updatedAt @map("updated_at")
   deletedAt DateTime? @map("deleted_at")
+
+  // Which ledger account this category's sales post to in an accounting
+  // export (see modules/accountingExport). Free text so it matches
+  // whatever chart of accounts the outlet's bookkeeper already uses;
+  // falls back to the category name when unset.
+  accountingCategory String? @map("accounting_category")
 
   products Product[]
 
@@ -391,8 +482,110 @@ model Table {
 
   outlet       Outlet        @relation(fields: [outletId], references: [id])
   transactions Transaction[]
+  reservations Reservation[]
 
   @@map("tables")
+}
+
+model Reservation {
+  id                 Int               @id @default(autoincrement())
+  outletId           Int               @map("outlet_id")
+  tableId            Int?              @map("table_id") // nullable until staff assign a table
+  customerId         Int?              @map("customer_id")
+  customerName       String            @map("customer_name")
+  phone              String?
+  partySize          Int               @map("party_size")
+  reservedFor        DateTime          @map("reserved_for")
+  durationMinutes    Int               @default(90) @map("duration_minutes")
+  status             ReservationStatus @default(PENDING)
+  source             ReservationSource @default(STAFF)
+  // Deposits are collected in person at seating and recorded here as a plain
+  // amount — Payment rows require an existing Transaction, which doesn't
+  // exist yet at booking time, so deposits aren't backed by a Payment.
+  depositAmount      Decimal?          @map("deposit_amount") @db.Decimal(12, 2)
+  depositCollectedAt DateTime?         @map("deposit_collected_at")
+  notes              String?
+  transactionId      Int?              @unique @map("transaction_id") // set once seated & a tab is opened
+  cancelledReason    String?           @map("cancelled_reason")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  outlet      Outlet       @relation(fields: [outletId], references: [id])
+  table       Table?       @relation(fields: [tableId], references: [id])
+  customer    Customer?    @relation(fields: [customerId], references: [id])
+  transaction Transaction? @relation(fields: [transactionId], references: [id])
+
+  @@index([outletId, reservedFor])
+  @@map("reservations")
+}
+
+// Credentials + settings for one delivery-platform connection at one outlet
+// (an outlet can run several, e.g. Grab and a CUSTOM webhook side by side).
+// apiKey/webhookSecret are encrypted at rest (see lib/crypto.ts) — unlike
+// PrintBridge's token, these must be recoverable in plaintext to sign
+// outgoing calls and verify incoming webhook signatures, so they're
+// encrypted rather than hashed.
+model DeliveryPlatform {
+  id                     Int              @id @default(autoincrement())
+  outletId               Int              @map("outlet_id")
+  provider               DeliveryProvider
+  name                   String // display name, e.g. "Grab (Main Outlet)"
+  apiKeyEncrypted        String?          @map("api_key_encrypted")
+  webhookSecretEncrypted String?          @map("webhook_secret_encrypted")
+  autoAccept             Boolean          @default(false) @map("auto_accept")
+  isActive               Boolean          @default(true) @map("is_active")
+  createdAt              DateTime         @default(now()) @map("created_at")
+  updatedAt              DateTime         @updatedAt @map("updated_at")
+  deletedAt              DateTime?        @map("deleted_at")
+
+  outlet         Outlet          @relation(fields: [outletId], references: [id])
+  deliveryOrders DeliveryOrder[]
+
+  @@map("delivery_platforms")
+}
+
+// One incoming order from a delivery platform. transactionId is set once
+// accepted (checkout/finalize reused, origin=DELIVERY) — PENDING orders have
+// no Transaction yet, mirroring Reservation's "not booked until confirmed"
+// shape. @@unique([platformId, externalOrderId]) makes webhook delivery
+// idempotent: replays of the same platform order upsert instead of duplicating.
+model DeliveryOrder {
+  id               Int                 @id @default(autoincrement())
+  outletId         Int                 @map("outlet_id")
+  platformId       Int                 @map("platform_id")
+  transactionId    Int?                @unique @map("transaction_id")
+  externalOrderId  String              @map("external_order_id")
+  externalStatus   String?             @map("external_status") // raw platform status string, informational only
+  status           DeliveryOrderStatus @default(PENDING)
+  rawPayload       Json                @map("raw_payload")
+  customerName     String?             @map("customer_name")
+  customerPhone    String?             @map("customer_phone")
+  deliveryAddress  String?             @map("delivery_address")
+  courierName      String?             @map("courier_name")
+  courierPhone     String?             @map("courier_phone")
+  commissionAmount Decimal?            @map("commission_amount") @db.Decimal(12, 2)
+  rejectedReason   String?             @map("rejected_reason")
+  acceptedAt       DateTime?           @map("accepted_at")
+  readyAt          DateTime?           @map("ready_at")
+  pickedUpAt       DateTime?           @map("picked_up_at")
+  syncedAt         DateTime?           @map("synced_at")
+  // Staff-triggered, only from a terminal state (PICKED_UP/REJECTED) — hides
+  // it from the default Kanban view without deleting the row, since it's a
+  // financial record tied to a receipt/e-invoice (same "never hard-delete"
+  // convention as Transaction/Reservation elsewhere in this schema).
+  archivedAt       DateTime?           @map("archived_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  outlet      Outlet           @relation(fields: [outletId], references: [id])
+  platform    DeliveryPlatform @relation(fields: [platformId], references: [id])
+  transaction Transaction?     @relation(fields: [transactionId], references: [id])
+
+  @@unique([platformId, externalOrderId])
+  @@index([outletId, status])
+  @@map("delivery_orders")
 }
 
 // A prep station in the kitchen/bar that a Kitchen Display screen filters
@@ -432,13 +625,97 @@ model Customer {
   // Loyalty points balance, accrued/redeemed on completed transactions.
   pointsBalance Int @default(0) @map("points_balance")
 
+  // PDPA marketing consent — gates every CampaignSend (see modules/campaigns).
+  // Explicit opt-in only; no send is attempted for a customer without it.
+  marketingConsent   Boolean   @default(false) @map("marketing_consent")
+  marketingConsentAt DateTime? @map("marketing_consent_at")
+
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @updatedAt @map("updated_at")
   deletedAt DateTime? @map("deleted_at")
 
-  transactions Transaction[]
+  transactions  Transaction[]
+  reservations  Reservation[]
+  campaignSends CampaignSend[]
 
   @@map("customers")
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// CRM / Marketing Automation
+// ─────────────────────────────────────────────────────────────────────────
+
+// Structured rule + single numeric threshold (not a free-form JSON rule
+// engine) — every rule type is mechanically evaluable by one Prisma query
+// (see modules/segments/service.ts evaluateSegment), and the frontend stays
+// a dropdown + one number input rather than a JSON editor.
+model CustomerSegment {
+  id       Int             @id @default(autoincrement())
+  name     String
+  ruleType SegmentRuleType @map("rule_type")
+
+  // Meaning depends on ruleType: days for NO_VISIT_SINCE_DAYS /
+  // BIRTHDAY_WITHIN_DAYS, a spend threshold for TOTAL_SPEND_ABOVE, unused
+  // (null) for ALL_CUSTOMERS.
+  ruleValue Int? @map("rule_value")
+
+  createdByUserId Int @map("created_by_user_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  createdBy User       @relation(fields: [createdByUserId], references: [id])
+  campaigns Campaign[]
+
+  @@map("customer_segments")
+}
+
+model Campaign {
+  id          Int                 @id @default(autoincrement())
+  name        String
+  segmentId   Int                 @map("segment_id")
+  channel     CampaignChannel     @default(EMAIL)
+  triggerType CampaignTriggerType @default(MANUAL) @map("trigger_type")
+  discountId  Int?                @map("discount_id")
+
+  subject String
+  // Plain text/HTML with a `{{customerName}}` placeholder substituted at
+  // send time — no templating engine, matches the receipt template's
+  // plain-string approach.
+  body    String
+
+  status CampaignStatus @default(DRAFT)
+  sentAt DateTime?      @map("sent_at")
+
+  createdByUserId Int @map("created_by_user_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  segment   CustomerSegment @relation(fields: [segmentId], references: [id])
+  discount  Discount?       @relation(fields: [discountId], references: [id])
+  createdBy User            @relation(fields: [createdByUserId], references: [id])
+
+  sends CampaignSend[]
+
+  @@map("campaigns")
+}
+
+// One row per recipient, snapshotted when the campaign is sent — both the
+// audit trail and the per-recipient status the UI shows.
+model CampaignSend {
+  id           Int                @id @default(autoincrement())
+  campaignId   Int                @map("campaign_id")
+  customerId   Int                @map("customer_id")
+  status       CampaignSendStatus
+  errorMessage String?            @map("error_message")
+  sentAt       DateTime?          @map("sent_at")
+  createdAt    DateTime           @default(now()) @map("created_at")
+
+  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  customer Customer @relation(fields: [customerId], references: [id])
+
+  @@map("campaign_sends")
 }
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -470,6 +747,7 @@ model Discount {
 
   transactionItems TransactionItem[]
   orderDiscountOn  Transaction[]     @relation("OrderDiscount")
+  campaigns        Campaign[]
 
   @@map("discounts")
 }
@@ -562,9 +840,11 @@ model Transaction {
   approvedBy    User?     @relation("ApprovedByUser", fields: [approvedByUserId], references: [id])
   orderDiscount Discount? @relation("OrderDiscount", fields: [orderDiscountId], references: [id])
 
-  items     TransactionItem[]
-  payments  Payment[]
-  printJobs PrintJob[]
+  items         TransactionItem[]
+  payments      Payment[]
+  printJobs     PrintJob[]
+  reservation   Reservation?
+  deliveryOrder DeliveryOrder?
 
   @@map("transactions")
 }
@@ -625,6 +905,40 @@ model Payment {
   giftCard    GiftCard?   @relation(fields: [giftCardId], references: [id])
 
   @@map("payments")
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Accounting / Finance Export
+// ─────────────────────────────────────────────────────────────────────────
+
+// One row per generated export "run" — no new source-of-truth data, it's a
+// derived report file. Kept as a persisted record (rather than a stateless
+// download like the generic Reports catalog) so a run's file can be
+// re-downloaded later without regenerating it, and so staff have an audit
+// trail of who exported what period in which format.
+model AccountingExportRun {
+  id       Int                    @id @default(autoincrement())
+  outletId Int                    @map("outlet_id")
+  format   AccountingExportFormat
+  status   AccountingExportStatus @default(COMPLETED)
+
+  periodStart DateTime @map("period_start")
+  periodEnd   DateTime @map("period_end")
+
+  // Relative path under the (non-public) accounting-exports upload dir;
+  // null when status is FAILED.
+  fileUrl      String? @map("file_url")
+  rowCount     Int     @default(0) @map("row_count")
+  errorMessage String? @map("error_message")
+
+  requestedByUserId Int @map("requested_by_user_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  outlet      Outlet @relation(fields: [outletId], references: [id])
+  requestedBy User   @relation(fields: [requestedByUserId], references: [id])
+
+  @@map("accounting_export_runs")
 }
 
 // ─────────────────────────────────────────────────────────────────────────

@@ -1,7 +1,9 @@
 export type Role = "ADMIN" | "MANAGER" | "CASHIER" | "KITCHEN";
 export type TransactionStatus = "HELD" | "OPEN" | "COMPLETED" | "VOIDED" | "REFUNDED";
-export type TransactionOrigin = "POS" | "QR";
-export type PaymentMethod = "CASH" | "CARD" | "EWALLET" | "GIFT_CARD" | "LOYALTY_POINTS";
+export type TransactionOrigin = "POS" | "QR" | "DELIVERY";
+export type PaymentMethod = "CASH" | "CARD" | "EWALLET" | "GIFT_CARD" | "LOYALTY_POINTS" | "ONLINE";
+export type DeliveryProvider = "GRAB" | "FOODPANDA" | "DOORDASH" | "CUSTOM";
+export type DeliveryOrderStatus = "PENDING" | "ACCEPTED" | "REJECTED" | "READY" | "PICKED_UP" | "CANCELLED";
 export type MovementType = "RESTOCK" | "WASTAGE" | "CORRECTION" | "SALE" | "REFUND" | "TRANSFER_OUT" | "TRANSFER_IN";
 export type TableStatus = "AVAILABLE" | "OCCUPIED" | "RESERVED" | "NOT_AVAILABLE";
 export type TableShape = "ROUND" | "RECTANGLE";
@@ -19,6 +21,8 @@ export type PurchaseOrderStatus =
 export type StockTransferStatus = "PENDING" | "IN_TRANSIT" | "RECEIVED" | "CANCELLED";
 export type StockTakeStatus = "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
 export type EInvoiceStatus = "NOT_APPLICABLE" | "GENERATED" | "CANCELLED";
+export type ReservationStatus = "PENDING" | "CONFIRMED" | "SEATED" | "COMPLETED" | "CANCELLED" | "NO_SHOW";
+export type ReservationSource = "STAFF" | "ONLINE" | "PHONE";
 
 export interface Outlet {
   id: number;
@@ -51,6 +55,7 @@ export interface UserDto {
 export interface ProductCategory {
   id: number;
   name: string;
+  accountingCategory?: string | null;
 }
 
 export interface ProductVariant {
@@ -171,6 +176,8 @@ export interface Customer {
   address?: string | null;
   source?: CustomerSource | null;
   pointsBalance?: number;
+  marketingConsent?: boolean;
+  marketingConsentAt?: string | null;
   createdAt?: string;
 }
 
@@ -208,6 +215,65 @@ export interface TableDto {
   qrToken: string | null;
   qrTokenRotatedAt: string | null;
   activeOrder: { id: number; origin: TransactionOrigin } | null;
+}
+
+export interface Reservation {
+  id: number;
+  outletId: number;
+  tableId: number | null;
+  customerId: number | null;
+  customerName: string;
+  phone: string | null;
+  partySize: number;
+  reservedFor: string;
+  durationMinutes: number;
+  status: ReservationStatus;
+  source: ReservationSource;
+  depositAmount: number | null;
+  depositCollectedAt: string | null;
+  notes: string | null;
+  transactionId: number | null;
+  cancelledReason: string | null;
+  createdAt: string;
+  updatedAt: string;
+  table: { id: number; name: string } | null;
+  customer: { id: number; name: string; phone: string | null } | null;
+}
+
+export interface DeliveryPlatform {
+  id: number;
+  outletId: number;
+  provider: DeliveryProvider;
+  name: string;
+  autoAccept: boolean;
+  isActive: boolean;
+  createdAt: string;
+  hasApiKey: boolean;
+  hasWebhookSecret: boolean;
+}
+
+export interface DeliveryOrder {
+  id: number;
+  outletId: number;
+  platformId: number;
+  platform: { id: number; provider: DeliveryProvider; name: string };
+  transactionId: number | null;
+  externalOrderId: string;
+  externalStatus: string | null;
+  status: DeliveryOrderStatus;
+  customerName: string | null;
+  customerPhone: string | null;
+  deliveryAddress: string | null;
+  courierName: string | null;
+  courierPhone: string | null;
+  commissionAmount: number | null;
+  rejectedReason: string | null;
+  items: { name: string; quantity: number; lineTotal: number | null; mapped: boolean }[];
+  acceptedAt: string | null;
+  readyAt: string | null;
+  pickedUpAt: string | null;
+  createdAt: string;
+  transaction: { id: number; receiptNumber: string | null; total: number } | null;
 }
 
 export interface TransactionItemDto {

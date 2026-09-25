@@ -12,6 +12,7 @@ export function CategoriesTab() {
   const [name, setName] = useState("");
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editingName, setEditingName] = useState("");
+  const [editingAccountingCategory, setEditingAccountingCategory] = useState("");
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -23,11 +24,16 @@ export function CategoriesTab() {
   function startEdit(c: ProductCategory) {
     setEditingId(c.id);
     setEditingName(c.name);
+    setEditingAccountingCategory(c.accountingCategory ?? "");
   }
 
   async function saveEdit(id: number) {
     if (!editingName.trim()) return;
-    await updateCategory.mutateAsync({ id, name: editingName.trim() });
+    await updateCategory.mutateAsync({
+      id,
+      name: editingName.trim(),
+      accountingCategory: editingAccountingCategory.trim() || null,
+    });
     setEditingId(null);
   }
 
@@ -42,6 +48,7 @@ export function CategoriesTab() {
           <thead className="bg-gray-50 text-gray-500 text-left">
             <tr>
               <th className="px-4 py-2">Name</th>
+              <th className="px-4 py-2">Accounting Category</th>
               <th className="px-4 py-2"></th>
             </tr>
           </thead>
@@ -58,6 +65,18 @@ export function CategoriesTab() {
                     />
                   ) : (
                     c.name
+                  )}
+                </td>
+                <td className="px-4 py-2 text-gray-500">
+                  {editingId === c.id ? (
+                    <Input
+                      placeholder={c.name}
+                      value={editingAccountingCategory}
+                      onChange={(e) => setEditingAccountingCategory(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && saveEdit(c.id)}
+                    />
+                  ) : (
+                    c.accountingCategory || <span className="text-gray-300">(uses "{c.name}")</span>
                   )}
                 </td>
                 <td className="px-4 py-2 text-right space-x-2">
@@ -85,7 +104,7 @@ export function CategoriesTab() {
             ))}
             {categories?.length === 0 && (
               <tr>
-                <td colSpan={2} className="px-4 py-8 text-center text-gray-400">
+                <td colSpan={3} className="px-4 py-8 text-center text-gray-400">
                   No categories yet.
                 </td>
               </tr>

@@ -19,6 +19,12 @@ A single web-based Point of Sale application for retail/F&B, built with a multi-
 
 Built after the v1 core: Kitchen Display System / order routing (`KITCHEN` role, `/kds`), supplier & purchasing (purchase orders with partial receiving) + multi-outlet stock transfers, loyalty points + rule-based promotions + gift cards, and user access management (auth audit trail, account lockout). See [`planning.md`](planning.md) Phase 7 and [`memory.md`](memory.md) Key Decisions for details.
 
+## Setting up a new outlet
+
+Step-by-step walkthrough for bringing up a brand-new outlet (create it,
+grant staff access, tax rates, tables, kitchen routing, hardware, opening
+stock): [`OUTLET_SETUP.md`](OUTLET_SETUP.md).
+
 ## Phase 8: Hardware
 
 Thermal receipt/kitchen printers (network, an on-site print bridge for a

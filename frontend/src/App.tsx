@@ -17,6 +17,10 @@ import { QrMenuPage } from "@/features/qrOrder/QrMenuPage";
 import { CustomerDisplayPage } from "./features/customerDisplay/CustomerDisplayPage";
 import { QrOrderStatusPage } from "@/features/qrOrder/QrOrderStatusPage";
 import { EInvoiceVerifyPage } from "@/features/einvoice/EInvoiceVerifyPage";
+import { ReservationBookingPage } from "@/features/reservations/ReservationBookingPage";
+import { ReservationsPage } from "@/features/reservations/ReservationsPage";
+import { DeliveryQueuePage } from "@/features/delivery/DeliveryQueuePage";
+import { CrmPage } from "@/features/crm/CrmPage";
 
 export function App() {
   return (
@@ -26,6 +30,7 @@ export function App() {
       <Route path="/order/:token/status" element={<QrOrderStatusPage />} />
       <Route path="/einvoice/:uuid/share/:longId" element={<EInvoiceVerifyPage />} />
       <Route path="/display/:token" element={<CustomerDisplayPage />} />
+      <Route path="/reserve/:outletId" element={<ReservationBookingPage />} />
 
       <Route element={<ProtectedRoute />}>
         <Route element={<AppLayout />}>
@@ -33,6 +38,8 @@ export function App() {
             <Route path="/pos" element={<PosPage />} />
             <Route path="/transactions" element={<TransactionsPage />} />
             <Route path="/customers" element={<CustomersPage />} />
+            <Route path="/reservations" element={<ReservationsPage />} />
+            <Route path="/delivery" element={<DeliveryQueuePage />} />
           </Route>
 
           <Route element={<ProtectedRoute roles={["ADMIN", "MANAGER", "CASHIER", "KITCHEN"]} />}>
@@ -45,6 +52,7 @@ export function App() {
             <Route path="/products" element={<ProductsPage />} />
             <Route path="/inventory" element={<InventoryPage />} />
             <Route path="/reports" element={<ReportsPage />} />
+            <Route path="/crm" element={<CrmPage />} />
             <Route path="/shift-management" element={<ShiftManagementPage />} />
           </Route>
 

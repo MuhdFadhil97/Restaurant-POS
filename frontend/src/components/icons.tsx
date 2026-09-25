@@ -179,3 +179,23 @@ export function WarehouseIcon(props: SVGProps<SVGSVGElement>) {
     </Icon>
   );
 }
+
+export function TruckIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <rect x="2" y="7" width="13" height="10" rx="1" />
+      <path d="M15 10h4l3 3v4h-7z" />
+      <circle cx="7" cy="18.5" r="1.75" />
+      <circle cx="17.5" cy="18.5" r="1.75" />
+    </Icon>
+  );
+}
+
+export function MegaphoneIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <path d="M3 10v4a1 1 0 0 0 1 1h2l1 5h2l-1-5h1l9 4V6l-9 4H4a1 1 0 0 0-1 1z" />
+      <path d="M19 9.5a3.5 3.5 0 0 1 0 5" />
+    </Icon>
+  );
+}

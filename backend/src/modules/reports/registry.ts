@@ -27,6 +27,12 @@ import {
   staffOvertimeReport,
 } from "../staffAttendance/reportQueries";
 import { customerSegmentationReport, loyaltyLedgerReport } from "../customers/reportQueries";
+import {
+  deliveryFulfillmentTimeReport,
+  deliveryOrdersReport,
+  deliveryPlatformPerformanceReport,
+  deliveryRejectionsReport,
+} from "../deliveryOrders/reportQueries";
 
 export interface ReportDefinition {
   category: string;
@@ -110,6 +116,20 @@ export const reportRegistry: Record<string, ReportDefinition> = {
 
   // Audit
   "audit-log": { category: "audit", fetch: reportsService.auditLogReport, querySchema: auditLogQuerySchema },
+
+  // Delivery / Online-Ordering
+  "delivery-orders": { category: "delivery", fetch: deliveryOrdersReport, querySchema: reportQuerySchema },
+  "delivery-platform-performance": {
+    category: "delivery",
+    fetch: deliveryPlatformPerformanceReport,
+    querySchema: reportQuerySchema,
+  },
+  "delivery-rejections": { category: "delivery", fetch: deliveryRejectionsReport, querySchema: reportQuerySchema },
+  "delivery-fulfillment-time": {
+    category: "delivery",
+    fetch: deliveryFulfillmentTimeReport,
+    querySchema: reportQuerySchema,
+  },
 };
 
 export function getReportDefinition(reportKey: string): ReportDefinition {

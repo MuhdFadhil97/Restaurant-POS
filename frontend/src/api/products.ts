@@ -127,8 +127,8 @@ export function useCreateCategory() {
 export function useUpdateCategory() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, name }: { id: number; name: string }) =>
-      (await apiClient.patch<ProductCategory>(`/categories/${id}`, { name })).data,
+    mutationFn: async ({ id, name, accountingCategory }: { id: number; name: string; accountingCategory?: string | null }) =>
+      (await apiClient.patch<ProductCategory>(`/categories/${id}`, { name, accountingCategory })).data,
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["categories"] });
       qc.invalidateQueries({ queryKey: ["products"] });

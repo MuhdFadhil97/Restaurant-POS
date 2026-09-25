@@ -16,7 +16,7 @@ export function renderKitchenTicket(
     stationName: string;
     transactionId: number;
     tableName?: string | null;
-    origin: "POS" | "QR";
+    origin: "POS" | "QR" | "DELIVERY";
     staffName?: string | null;
     notes?: string | null;
     kind: "NEW" | "ADDITIONAL" | "CANCEL";
@@ -44,13 +44,13 @@ export function renderKitchenTicket(
   doc.println(ticket.stationName.toUpperCase());
   doc.setTextSize(1, 1);
   doc.bold(true);
-  doc.println(ticket.tableName ? `TABLE ${ticket.tableName}` : "TAKEAWAY");
+  doc.println(ticket.tableName ? `TABLE ${ticket.tableName}` : ticket.origin === "DELIVERY" ? "DELIVERY" : "TAKEAWAY");
   doc.bold(false);
   doc.setTextNormal();
 
   doc.alignLeft();
   doc.leftRight(`Order #${ticket.transactionId}`, formatPrintClock(ticket.at ?? new Date()));
-  const by = ticket.origin === "QR" ? "QR self-order" : ticket.staffName;
+  const by = ticket.origin === "QR" ? "QR self-order" : ticket.origin === "DELIVERY" ? "Delivery platform" : ticket.staffName;
   if (by) doc.println(`By: ${by}`);
   doc.drawLine();
 

@@ -1,4 +1,7 @@
 import { z } from "zod";
+import { MODULE_KEYS } from "../../lib/modules";
+
+const moduleKeySchema = z.enum(MODULE_KEYS);
 
 export const createUserSchema = z.object({
   email: z.string().email(),
@@ -7,6 +10,7 @@ export const createUserSchema = z.object({
   name: z.string().min(1),
   role: z.enum(["ADMIN", "MANAGER", "CASHIER"]),
   outletIds: z.array(z.coerce.number().int()).default([]),
+  moduleAccess: z.array(moduleKeySchema).optional(),
 });
 
 export const updateUserSchema = z.object({
@@ -17,6 +21,7 @@ export const updateUserSchema = z.object({
   role: z.enum(["ADMIN", "MANAGER", "CASHIER"]).optional(),
   isActive: z.boolean().optional(),
   outletIds: z.array(z.coerce.number().int()).optional(),
+  moduleAccess: z.array(moduleKeySchema).optional(),
 });
 
 export type CreateUserInput = z.infer<typeof createUserSchema>;

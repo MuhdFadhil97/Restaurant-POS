@@ -22,7 +22,7 @@ export function LoginPage() {
     try {
       const result = await login(identifier, password);
       setSession(result.token, result.user);
-      navigate(getHomeRoute(result.user.role));
+      navigate(getHomeRoute(result.user.role, result.user.modules));
     } catch (err) {
       setError(getErrorMessage(err));
     } finally {

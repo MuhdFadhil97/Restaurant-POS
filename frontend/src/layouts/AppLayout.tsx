@@ -7,41 +7,8 @@ import { useOutlets } from "@/api/outlets";
 import { Select } from "@/components/ui";
 import { NotificationBell } from "@/features/notifications/NotificationBell";
 import { LicenseBanner } from "@/components/LicenseBanner";
-import {
-  BoxIcon,
-  CalendarIcon,
-  CartIcon,
-  ChartBarIcon,
-  ChefHatIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
-  ClockIcon,
-  CogIcon,
-  DashboardIcon,
-  LogoutIcon,
-  MegaphoneIcon,
-  ReceiptIcon,
-  TruckIcon,
-  UsersIcon,
-  WarehouseIcon,
-} from "@/components/icons";
-
-const navItems = [
-  { to: "/dashboard", label: "Dashboard", icon: DashboardIcon, roles: ["ADMIN", "MANAGER"] },
-  { to: "/pos", label: "POS", icon: CartIcon, roles: ["ADMIN", "MANAGER", "CASHIER"] },
-  { to: "/transactions", label: "Transactions", icon: ReceiptIcon, roles: ["ADMIN", "MANAGER", "CASHIER"] },
-  { to: "/reservations", label: "Reservations", icon: CalendarIcon, roles: ["ADMIN", "MANAGER", "CASHIER"] },
-  { to: "/delivery", label: "Delivery", icon: TruckIcon, roles: ["ADMIN", "MANAGER", "CASHIER"] },
-  { to: "/kds", label: "Kitchen", icon: ChefHatIcon, roles: ["ADMIN", "MANAGER", "CASHIER", "KITCHEN"] },
-  { to: "/products", label: "Products", icon: BoxIcon, roles: ["ADMIN", "MANAGER"] },
-  { to: "/inventory", label: "Inventory", icon: WarehouseIcon, roles: ["ADMIN", "MANAGER"] },
-  { to: "/customers", label: "Customers", icon: UsersIcon, roles: ["ADMIN", "MANAGER", "CASHIER"] },
-  { to: "/crm", label: "Marketing", icon: MegaphoneIcon, roles: ["ADMIN", "MANAGER"] },
-  { to: "/reports", label: "Reports", icon: ChartBarIcon, roles: ["ADMIN", "MANAGER"] },
-  { to: "/my-shift", label: "My Shift", icon: ClockIcon, roles: ["ADMIN", "MANAGER", "CASHIER", "KITCHEN"] },
-  { to: "/shift-management", label: "Shift Management", icon: CalendarIcon, roles: ["ADMIN", "MANAGER"] },
-  { to: "/settings", label: "Settings", icon: CogIcon, roles: ["ADMIN"] },
-];
+import { ChevronLeftIcon, ChevronRightIcon, LogoutIcon } from "@/components/icons";
+import { MAIN_MODULES } from "@/config/modules";
 
 export function AppLayout() {
   const { user, logout } = useAuthStore();
@@ -57,7 +24,8 @@ export function AppLayout() {
 
   if (!user) return null;
 
-  const visibleNav = navItems.filter((item) => item.roles.includes(user.role));
+  const userModules = user.modules ?? [];
+  const visibleNav = MAIN_MODULES.filter((item) => item.path && userModules.includes(item.key));
 
   return (
     <div className="flex flex-col h-screen overflow-hidden">
@@ -80,8 +48,8 @@ export function AppLayout() {
           <nav className="flex-1 py-4 space-y-1 overflow-y-auto">
             {visibleNav.map((item) => (
               <NavLink
-                key={item.to}
-                to={item.to}
+                key={item.key}
+                to={item.path!}
                 title={sidebarCollapsed ? item.label : undefined}
                 className={({ isActive }) =>
                   `flex items-center gap-3 text-sm font-medium ${
@@ -89,7 +57,7 @@ export function AppLayout() {
                   } ${isActive ? "bg-brand-600 text-white" : "text-gray-300 hover:bg-gray-800"}`
                 }
               >
-                <item.icon className="w-5 h-5 shrink-0" />
+                {item.icon && <item.icon className="w-5 h-5 shrink-0" />}
                 {!sidebarCollapsed && <span>{item.label}</span>}
               </NavLink>
             ))}

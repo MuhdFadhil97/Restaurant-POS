@@ -10,6 +10,7 @@ export interface AuthUser {
   username: string;
   role: Role;
   outletIds: number[];
+  modules: string[];
 }
 
 interface AuthState {

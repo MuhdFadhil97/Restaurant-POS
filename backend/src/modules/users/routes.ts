@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { authenticate } from "../../middleware/auth";
 import { requireRole } from "../../middleware/roleGuard";
+import { requireModule } from "../../middleware/moduleGuard";
 import { validate } from "../../middleware/validate";
 import { enforceUserLimit } from "../../middleware/license";
 import { createUserSchema, updateUserSchema } from "./validation";
@@ -8,7 +9,7 @@ import * as controller from "./controller";
 
 const router = Router();
 
-router.use(authenticate, requireRole("ADMIN"));
+router.use(authenticate, requireRole("ADMIN"), requireModule("settings.users"));
 
 router.get("/", controller.list);
 router.get("/:id", controller.getOne);

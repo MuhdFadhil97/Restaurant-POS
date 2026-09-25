@@ -3,6 +3,7 @@ import { prisma } from "../../lib/prisma";
 import { signToken } from "../../lib/jwt";
 import { ApiError } from "../../lib/apiError";
 import { recordAudit } from "../../lib/audit";
+import { getEffectiveModules } from "../../lib/modules";
 import { LoginInput } from "./validation";
 
 const MAX_FAILED_ATTEMPTS = 5;
@@ -15,7 +16,10 @@ export async function login(input: LoginInput) {
       isActive: true,
       OR: [{ email: input.identifier }, { username: input.identifier }],
     },
-    include: { outletAccess: { select: { outletId: true } } },
+    include: {
+      outletAccess: { select: { outletId: true } },
+      moduleAccess: { select: { moduleKey: true } },
+    },
   });
 
   // No matching account — nothing to attribute a lockout/audit row to, and
@@ -59,7 +63,12 @@ export async function login(input: LoginInput) {
   }
 
   const outletIds = user.outletAccess.map((a) => a.outletId);
-  const token = signToken({ userId: user.id, role: user.role, outletIds });
+  const modules = getEffectiveModules(
+    user.role,
+    user.moduleAccessCustomized,
+    user.moduleAccess.map((m) => m.moduleKey)
+  );
+  const token = signToken({ userId: user.id, role: user.role, outletIds, modules });
 
   await prisma.$transaction(async (tx) => {
     await tx.user.update({
@@ -83,6 +92,7 @@ export async function login(input: LoginInput) {
       username: user.username,
       role: user.role,
       outletIds,
+      modules,
     },
   };
 }
@@ -90,7 +100,10 @@ export async function login(input: LoginInput) {
 export async function getCurrentUser(userId: number) {
   const user = await prisma.user.findUniqueOrThrow({
     where: { id: userId },
-    include: { outletAccess: { select: { outletId: true } } },
+    include: {
+      outletAccess: { select: { outletId: true } },
+      moduleAccess: { select: { moduleKey: true } },
+    },
   });
 
   return {
@@ -100,5 +113,10 @@ export async function getCurrentUser(userId: number) {
     username: user.username,
     role: user.role,
     outletIds: user.outletAccess.map((a) => a.outletId),
+    modules: getEffectiveModules(
+      user.role,
+      user.moduleAccessCustomized,
+      user.moduleAccess.map((m) => m.moduleKey)
+    ),
   };
 }

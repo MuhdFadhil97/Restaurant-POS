@@ -3,6 +3,7 @@ import { useOutlets } from "@/api/outlets";
 import { useCreateUser, useUpdateUser, useUsers } from "@/api/users";
 import { Role, UserDto } from "@/api/types";
 import { Badge, Button, Card, Input, Modal, Select } from "@/components/ui";
+import { MAIN_MODULES, SETTINGS_MODULES, getDefaultModulesForRole } from "@/config/modules";
 
 export function UsersTab() {
   const { data: users } = useUsers();
@@ -100,6 +101,9 @@ function UserFormModal({
   const [role, setRole] = useState<Role>(initial?.role ?? "CASHIER");
   const [outletIds, setOutletIds] = useState<number[]>(initial?.outletIds ?? []);
   const [isActive, setIsActive] = useState(initial?.isActive ?? true);
+  const [moduleAccess, setModuleAccess] = useState<string[]>(
+    initial?.moduleAccess ?? getDefaultModulesForRole(initial?.role ?? "CASHIER")
+  );
   const [submitting, setSubmitting] = useState(false);
 
   // The modal stays mounted (both the "create" and "edit" instances) while
@@ -115,6 +119,7 @@ function UserFormModal({
       setRole(initial?.role ?? "CASHIER");
       setOutletIds(initial?.outletIds ?? []);
       setIsActive(initial?.isActive ?? true);
+      setModuleAccess(initial?.moduleAccess ?? getDefaultModulesForRole(initial?.role ?? "CASHIER"));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, initial]);
@@ -123,11 +128,20 @@ function UserFormModal({
     setOutletIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
   }
 
+  function toggleModule(key: string) {
+    setModuleAccess((prev) => (prev.includes(key) ? prev.filter((x) => x !== key) : [...prev, key]));
+  }
+
+  function handleRoleChange(newRole: Role) {
+    setRole(newRole);
+    setModuleAccess(getDefaultModulesForRole(newRole));
+  }
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setSubmitting(true);
     try {
-      const payload: Record<string, unknown> = { name, email, username, role, outletIds, isActive };
+      const payload: Record<string, unknown> = { name, email, username, role, outletIds, isActive, moduleAccess };
       if (password) payload.password = password;
       await onSubmit(payload);
     } finally {
@@ -162,7 +176,7 @@ function UserFormModal({
         </div>
         <div>
           <label className="block text-xs text-gray-500 mb-1">Role</label>
-          <Select value={role} onChange={(e) => setRole(e.target.value as Role)}>
+          <Select value={role} onChange={(e) => handleRoleChange(e.target.value as Role)}>
             <option value="ADMIN">Admin</option>
             <option value="MANAGER">Manager</option>
             <option value="CASHIER">Cashier</option>
@@ -178,6 +192,45 @@ function UserFormModal({
                 {o.name}
               </label>
             ))}
+          </div>
+        </div>
+        <div>
+          <p className="text-sm font-medium text-gray-700 mb-1">Access Rights</p>
+          <p className="text-xs text-gray-400 mb-2">
+            Seeded from the selected role — tick or untick to customize this user's access individually.
+          </p>
+          <div className="border border-gray-200 rounded max-h-56 overflow-y-auto p-3 space-y-3">
+            <div>
+              <p className="text-xs font-semibold text-gray-500 mb-1">Main</p>
+              <div className="grid grid-cols-2 gap-1">
+                {MAIN_MODULES.map((m) => (
+                  <label key={m.key} className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={moduleAccess.includes(m.key)}
+                      onChange={() => toggleModule(m.key)}
+                    />
+                    {m.label}
+                  </label>
+                ))}
+              </div>
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-gray-500 mb-1">Settings</p>
+              <div className="grid grid-cols-2 gap-1">
+                {SETTINGS_MODULES.map((m) => (
+                  <label key={m.key} className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={moduleAccess.includes(m.key)}
+                      onChange={() => toggleModule(m.key)}
+                    />
+                    {m.label}
+                    {m.adminOnly && <span className="text-xs text-gray-400">(Admin only)</span>}
+                  </label>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
         {initial && (

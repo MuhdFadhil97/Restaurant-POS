@@ -50,6 +50,7 @@ export interface UserDto {
   role: Role;
   isActive: boolean;
   outletIds: number[];
+  moduleAccess: string[];
 }
 
 export interface ProductCategory {

@@ -270,6 +270,7 @@ model User {
   name         String
   role         Role
   isActive     Boolean @default(true) @map("is_active")
+  moduleAccessCustomized Boolean @default(false) @map("module_access_customized")
 
   // Login security (see [[verify-ui-by-driving-it]]-style incremental hardening).
   failedLoginAttempts Int       @default(0) @map("failed_login_attempts")
@@ -280,6 +281,7 @@ model User {
   deletedAt DateTime? @map("deleted_at")
 
   outletAccess            UserOutlet[]
+  moduleAccess            UserModuleAccess[]
   createdPrintJobs        PrintJob[]
   cashierTransactions     Transaction[]         @relation("CashierTransactions")
   voidedTransactions      Transaction[]         @relation("VoidedByUser")
@@ -316,6 +318,21 @@ model UserOutlet {
 
   @@unique([userId, outletId])
   @@map("user_outlets")
+}
+
+// Per-user module access overrides. Existence of a row = access granted.
+// A user with zero rows has never been customized and falls back to their
+// role's default modules (see backend/src/lib/modules.ts).
+model UserModuleAccess {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  moduleKey String   @map("module_key")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, moduleKey])
+  @@map("user_module_access")
 }
 
 // ─────────────────────────────────────────────────────────────────────────

@@ -1,13 +1,15 @@
 import { Router } from "express";
 import { authenticate } from "../../middleware/auth";
-import { requireRole } from "../../middleware/roleGuard";
+import { requireModule } from "../../middleware/moduleGuard";
 import { validate } from "../../middleware/validate";
 import { createShiftTemplateSchema, listShiftTemplatesQuerySchema, updateShiftTemplateSchema } from "./validation";
 import * as controller from "./controller";
 
 const router = Router();
 
-router.use(authenticate, requireRole("ADMIN", "MANAGER"));
+// Module access is authoritative here (not stacked with requireRole) so an
+// admin's per-user grant can genuinely extend beyond the role default.
+router.use(authenticate, requireModule("shift-management"));
 
 router.get("/", validate({ query: listShiftTemplatesQuerySchema }), controller.list);
 router.get("/:id", controller.getOne);

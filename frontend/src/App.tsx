@@ -34,29 +34,46 @@ export function App() {
 
       <Route element={<ProtectedRoute />}>
         <Route element={<AppLayout />}>
-          <Route element={<ProtectedRoute roles={["ADMIN", "MANAGER", "CASHIER"]} />}>
+          <Route element={<ProtectedRoute modules={["pos"]} />}>
             <Route path="/pos" element={<PosPage />} />
+          </Route>
+          <Route element={<ProtectedRoute modules={["transactions"]} />}>
             <Route path="/transactions" element={<TransactionsPage />} />
+          </Route>
+          <Route element={<ProtectedRoute modules={["customers"]} />}>
             <Route path="/customers" element={<CustomersPage />} />
+          </Route>
+          <Route element={<ProtectedRoute modules={["reservations"]} />}>
             <Route path="/reservations" element={<ReservationsPage />} />
+          </Route>
+          <Route element={<ProtectedRoute modules={["delivery"]} />}>
             <Route path="/delivery" element={<DeliveryQueuePage />} />
           </Route>
-
-          <Route element={<ProtectedRoute roles={["ADMIN", "MANAGER", "CASHIER", "KITCHEN"]} />}>
+          <Route element={<ProtectedRoute modules={["kds"]} />}>
             <Route path="/kds" element={<KdsPage />} />
+          </Route>
+          <Route element={<ProtectedRoute modules={["my-shift"]} />}>
             <Route path="/my-shift" element={<AttendancePage />} />
           </Route>
-
-          <Route element={<ProtectedRoute roles={["ADMIN", "MANAGER"]} />}>
+          <Route element={<ProtectedRoute modules={["dashboard"]} />}>
             <Route path="/dashboard" element={<DashboardPage />} />
+          </Route>
+          <Route element={<ProtectedRoute modules={["products"]} />}>
             <Route path="/products" element={<ProductsPage />} />
+          </Route>
+          <Route element={<ProtectedRoute modules={["inventory"]} />}>
             <Route path="/inventory" element={<InventoryPage />} />
+          </Route>
+          <Route element={<ProtectedRoute modules={["reports"]} />}>
             <Route path="/reports" element={<ReportsPage />} />
+          </Route>
+          <Route element={<ProtectedRoute modules={["crm"]} />}>
             <Route path="/crm" element={<CrmPage />} />
+          </Route>
+          <Route element={<ProtectedRoute modules={["shift-management"]} />}>
             <Route path="/shift-management" element={<ShiftManagementPage />} />
           </Route>
-
-          <Route element={<ProtectedRoute roles={["ADMIN"]} />}>
+          <Route element={<ProtectedRoute modules={["settings"]} />}>
             <Route path="/settings" element={<SettingsPage />} />
           </Route>
         </Route>

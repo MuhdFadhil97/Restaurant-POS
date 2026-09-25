@@ -1,7 +1,9 @@
 import bcrypt from "bcryptjs";
+import { Role } from "@prisma/client";
 import { prisma } from "../../lib/prisma";
 import { ApiError } from "../../lib/apiError";
 import { recordAudit } from "../../lib/audit";
+import { getEffectiveModules } from "../../lib/modules";
 import { CreateUserInput, UpdateUserInput } from "./validation";
 
 const SALT_ROUNDS = 10;
@@ -11,9 +13,11 @@ function toDto(user: {
   email: string;
   username: string;
   name: string;
-  role: string;
+  role: Role;
   isActive: boolean;
+  moduleAccessCustomized: boolean;
   outletAccess: { outletId: number }[];
+  moduleAccess: { moduleKey: string }[];
 }) {
   return {
     id: user.id,
@@ -23,13 +27,23 @@ function toDto(user: {
     role: user.role,
     isActive: user.isActive,
     outletIds: user.outletAccess.map((a) => a.outletId),
+    moduleAccess: getEffectiveModules(
+      user.role,
+      user.moduleAccessCustomized,
+      user.moduleAccess.map((m) => m.moduleKey)
+    ),
   };
 }
+
+const INCLUDE_ACCESS = {
+  outletAccess: { select: { outletId: true } },
+  moduleAccess: { select: { moduleKey: true } },
+} as const;
 
 export async function listUsers() {
   const users = await prisma.user.findMany({
     where: { deletedAt: null },
-    include: { outletAccess: { select: { outletId: true } } },
+    include: INCLUDE_ACCESS,
     orderBy: { name: "asc" },
   });
   return users.map(toDto);
@@ -38,7 +52,7 @@ export async function listUsers() {
 export async function getUser(id: number) {
   const user = await prisma.user.findFirst({
     where: { id, deletedAt: null },
-    include: { outletAccess: { select: { outletId: true } } },
+    include: INCLUDE_ACCESS,
   });
   if (!user) throw ApiError.notFound("User not found");
   return toDto(user);
@@ -54,8 +68,14 @@ export async function createUser(input: CreateUserInput) {
       name: input.name,
       role: input.role,
       outletAccess: { create: input.outletIds.map((outletId) => ({ outletId })) },
+      ...(input.moduleAccess
+        ? {
+            moduleAccessCustomized: true,
+            moduleAccess: { create: input.moduleAccess.map((moduleKey) => ({ moduleKey })) },
+          }
+        : {}),
     },
-    include: { outletAccess: { select: { outletId: true } } },
+    include: INCLUDE_ACCESS,
   });
   return toDto(user);
 }
@@ -64,7 +84,7 @@ export async function updateUser(id: number, input: UpdateUserInput, actorUserId
   const existing = await prisma.user.findFirst({ where: { id, deletedAt: null } });
   if (!existing) throw ApiError.notFound("User not found");
 
-  const { password, outletIds, ...rest } = input;
+  const { password, outletIds, moduleAccess, ...rest } = input;
   const passwordHash = password ? await bcrypt.hash(password, SALT_ROUNDS) : undefined;
 
   const user = await prisma.$transaction(async (tx) => {
@@ -74,10 +94,20 @@ export async function updateUser(id: number, input: UpdateUserInput, actorUserId
         data: outletIds.map((outletId) => ({ userId: id, outletId })),
       });
     }
+    if (moduleAccess) {
+      await tx.userModuleAccess.deleteMany({ where: { userId: id } });
+      await tx.userModuleAccess.createMany({
+        data: moduleAccess.map((moduleKey) => ({ userId: id, moduleKey })),
+      });
+    }
     const updated = await tx.user.update({
       where: { id },
-      data: { ...rest, ...(passwordHash ? { passwordHash } : {}) },
-      include: { outletAccess: { select: { outletId: true } } },
+      data: {
+        ...rest,
+        ...(passwordHash ? { passwordHash } : {}),
+        ...(moduleAccess ? { moduleAccessCustomized: true } : {}),
+      },
+      include: INCLUDE_ACCESS,
     });
 
     if (rest.role && rest.role !== existing.role) {
@@ -105,6 +135,15 @@ export async function updateUser(id: number, input: UpdateUserInput, actorUserId
         entityType: "User",
         entityId: id,
         details: { outletIds },
+      });
+    }
+    if (moduleAccess) {
+      await recordAudit(tx, {
+        userId: actorUserId,
+        action: "USER_MODULE_ACCESS_CHANGED",
+        entityType: "User",
+        entityId: id,
+        details: { moduleAccess },
       });
     }
 

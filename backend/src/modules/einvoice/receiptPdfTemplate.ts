@@ -1,4 +1,5 @@
 import { Prisma } from "@prisma/client";
+import { env } from "../../config/env";
 
 export type PdfReceiptTransaction = Prisma.TransactionGetPayload<{
   include: {
@@ -72,7 +73,7 @@ export function renderReceiptHtml(transaction: PdfReceiptTransaction): string {
     ${transaction.outlet.address ? `<p class="small">${escapeHtml(transaction.outlet.address)}</p>` : ""}
     ${transaction.outlet.einvoiceTin ? `<p class="small">TIN: ${escapeHtml(transaction.outlet.einvoiceTin)}</p>` : ""}
     ${transaction.outlet.einvoiceBrn ? `<p class="small">Reg No: ${escapeHtml(transaction.outlet.einvoiceBrn)}</p>` : ""}
-    <p class="small">${new Date(transaction.createdAt).toLocaleString()}</p>
+    <p class="small">${new Date(transaction.createdAt).toLocaleString("en-MY", { timeZone: env.appTimeZone })}</p>
     <p class="small">Receipt #${escapeHtml(transaction.receiptNumber ?? transaction.id)}</p>
     ${transaction.cashier ? `<p class="small">Cashier: ${escapeHtml(transaction.cashier.name)}</p>` : ""}
   </div>

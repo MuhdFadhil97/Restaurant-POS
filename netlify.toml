@@ -5,7 +5,7 @@
 
 [build.environment]
   VITE_API_URL = "https://pos-backend-production-09e4.up.railway.app/api"
-  VITE_PUBLIC_URL = "https://pos-frontend-fadhil.netlify.app"
+  VITE_PUBLIC_URL = "https://kafe97-pos.netlify.app"
 
 [[redirects]]
   from = "/*"

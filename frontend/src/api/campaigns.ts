@@ -3,6 +3,8 @@ import { apiClient } from "./client";
 
 export type CampaignStatus = "DRAFT" | "SENDING" | "COMPLETED" | "FAILED";
 export type CampaignSendStatus = "SENT" | "FAILED" | "SKIPPED_NO_CONSENT" | "SKIPPED_NO_CONTACT";
+export type CampaignChannel = "EMAIL";
+export type CampaignTriggerType = "MANUAL" | "EVENT_BIRTHDAY" | "EVENT_WINBACK";
 
 export interface CampaignCounts {
   sent: number;
@@ -13,10 +15,13 @@ export interface CampaignCounts {
 export interface Campaign {
   id: number;
   name: string;
+  channel: CampaignChannel;
+  triggerType: CampaignTriggerType;
   subject: string;
   body: string;
   status: CampaignStatus;
   sentAt: string | null;
+  pausedAt: string | null;
   createdAt: string;
   segment: { id: number; name: string };
   createdBy: { id: number; name: string };
@@ -39,6 +44,8 @@ export interface CampaignDetail extends Campaign {
 export interface CreateCampaignInput {
   name: string;
   segmentId: number;
+  channel: CampaignChannel;
+  triggerType: CampaignTriggerType;
   subject: string;
   body: string;
   discountId?: number;
@@ -77,3 +84,17 @@ export function useSendCampaign() {
     },
   });
 }
+
+function useCampaignAction(action: "pause" | "resume") {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: number) => (await apiClient.post<Campaign>(`/campaigns/${id}/${action}`)).data,
+    onSuccess: (_data, id) => {
+      qc.invalidateQueries({ queryKey: ["campaigns"] });
+      qc.invalidateQueries({ queryKey: ["campaign", id] });
+    },
+  });
+}
+
+export const usePauseCampaign = () => useCampaignAction("pause");
+export const useResumeCampaign = () => useCampaignAction("resume");

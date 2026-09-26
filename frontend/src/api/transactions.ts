@@ -172,16 +172,21 @@ export function useVoidTransaction() {
     mutationFn: async ({
       id,
       reason,
-      approverId,
+      approverUsername,
       approverPassword,
     }: {
       id: number;
       reason: string;
-      approverId?: number;
+      approverUsername?: string;
       approverPassword?: string;
     }) =>
-      (await apiClient.post<TransactionDto>(`/transactions/${id}/void`, { reason, approverId, approverPassword }))
-        .data,
+      (
+        await apiClient.post<TransactionDto>(`/transactions/${id}/void`, {
+          reason,
+          approverUsername,
+          approverPassword,
+        })
+      ).data,
     onSuccess: (data) => {
       qc.setQueryData(["transaction", data.id], data);
       qc.invalidateQueries({ queryKey: ["transactions"] });
@@ -197,16 +202,24 @@ export function useRefundTransaction() {
     mutationFn: async ({
       id,
       reason,
-      approverId,
+      approverUsername,
       approverPassword,
+      items,
     }: {
       id: number;
       reason: string;
-      approverId?: number;
+      approverUsername?: string;
       approverPassword?: string;
+      items?: { transactionItemId: number; quantity: number }[];
     }) =>
-      (await apiClient.post<TransactionDto>(`/transactions/${id}/refund`, { reason, approverId, approverPassword }))
-        .data,
+      (
+        await apiClient.post<TransactionDto>(`/transactions/${id}/refund`, {
+          reason,
+          approverUsername,
+          approverPassword,
+          items,
+        })
+      ).data,
     onSuccess: (data) => {
       qc.setQueryData(["transaction", data.id], data);
       qc.invalidateQueries({ queryKey: ["transactions"] });

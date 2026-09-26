@@ -15,3 +15,13 @@ export async function fetchMe(): Promise<AuthUser> {
   const { data } = await apiClient.get<AuthUser>("/auth/me");
   return data;
 }
+
+export async function forgotPassword(identifier: string): Promise<{ message: string }> {
+  const { data } = await apiClient.post<{ message: string }>("/auth/forgot-password", { identifier });
+  return data;
+}
+
+export async function resetPassword(token: string, password: string): Promise<{ message: string }> {
+  const { data } = await apiClient.post<{ message: string }>("/auth/reset-password", { token, password });
+  return data;
+}

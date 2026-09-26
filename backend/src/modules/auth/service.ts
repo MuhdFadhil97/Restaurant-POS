@@ -4,10 +4,12 @@ import { signToken } from "../../lib/jwt";
 import { ApiError } from "../../lib/apiError";
 import { recordAudit } from "../../lib/audit";
 import { getEffectiveModules } from "../../lib/modules";
-import { LoginInput } from "./validation";
+import { consumePasswordResetToken, issuePasswordResetLink } from "./passwordReset";
+import { ForgotPasswordInput, LoginInput, ResetPasswordInput } from "./validation";
 
 const MAX_FAILED_ATTEMPTS = 5;
 const LOCKOUT_DURATION_MS = 15 * 60 * 1000;
+const SALT_ROUNDS = 10;
 
 export async function login(input: LoginInput) {
   const user = await prisma.user.findFirst({
@@ -68,7 +70,13 @@ export async function login(input: LoginInput) {
     user.moduleAccessCustomized,
     user.moduleAccess.map((m) => m.moduleKey)
   );
-  const token = signToken({ userId: user.id, role: user.role, outletIds, modules });
+  const token = signToken({
+    userId: user.id,
+    role: user.role,
+    outletIds,
+    modules,
+    tokenVersion: user.tokenVersion,
+  });
 
   await prisma.$transaction(async (tx) => {
     await tx.user.update({
@@ -95,6 +103,26 @@ export async function login(input: LoginInput) {
       modules,
     },
   };
+}
+
+// Always succeeds from the caller's perspective, whether or not the
+// identifier matches an account — revealing that would be an enumeration
+// leak (same reasoning as login's "Invalid credentials" message).
+export async function forgotPassword(input: ForgotPasswordInput): Promise<void> {
+  const user = await prisma.user.findFirst({
+    where: {
+      deletedAt: null,
+      isActive: true,
+      OR: [{ email: input.identifier }, { username: input.identifier }],
+    },
+  });
+  if (!user) return;
+  await issuePasswordResetLink(user.id, user.email, user.name, "reset");
+}
+
+export async function resetPassword(input: ResetPasswordInput): Promise<void> {
+  const passwordHash = await bcrypt.hash(input.password, SALT_ROUNDS);
+  await consumePasswordResetToken(input.token, passwordHash);
 }
 
 export async function getCurrentUser(userId: number) {

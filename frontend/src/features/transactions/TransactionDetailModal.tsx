@@ -5,7 +5,7 @@ import { getErrorMessage } from "@/api/client";
 import { Badge, Button, Modal, Spinner } from "@/components/ui";
 import { money } from "@/features/pos/cartMath";
 import { Receipt } from "./Receipt";
-import { VoidRefundModal } from "./VoidRefundModal";
+import { RefundLineSelection, VoidRefundModal } from "./VoidRefundModal";
 import { useReceiptPrinting } from "@/features/hardware/useReceiptPrinting";
 
 const statusColor: Record<string, "gray" | "green" | "red" | "yellow" | "blue"> = {
@@ -14,6 +14,7 @@ const statusColor: Record<string, "gray" | "green" | "red" | "yellow" | "blue"> 
   COMPLETED: "green",
   VOIDED: "red",
   REFUNDED: "red",
+  PARTIALLY_REFUNDED: "yellow",
 };
 
 export function TransactionDetailModal({
@@ -42,9 +43,14 @@ export function TransactionDetailModal({
   }
 
   const canVoid = transaction.status === "COMPLETED" && (user?.role === "MANAGER" || user?.role === "ADMIN" || user?.role === "CASHIER");
-  const canRefund = transaction.status === "COMPLETED";
+  const canRefund = transaction.status === "COMPLETED" || transaction.status === "PARTIALLY_REFUNDED";
 
-  async function handleConfirm(input: { reason: string; approverId?: number; approverPassword?: string }) {
+  async function handleConfirm(input: {
+    reason: string;
+    approverUsername?: string;
+    approverPassword?: string;
+    items?: RefundLineSelection[];
+  }) {
     setError(null);
     try {
       if (action === "void") {
@@ -129,8 +135,28 @@ export function TransactionDetailModal({
 
           {transaction.voidReason && (
             <p className="text-xs text-red-500">
-              {transaction.status === "REFUNDED" ? "Refund" : "Void"} reason: {transaction.voidReason}
+              {transaction.status === "REFUNDED" || transaction.status === "PARTIALLY_REFUNDED" ? "Refund" : "Void"}{" "}
+              reason: {transaction.voidReason}
             </p>
+          )}
+
+          {transaction.refunds && transaction.refunds.length > 0 && (
+            <div className="text-sm">
+              <p className="font-medium mb-1">
+                Refund history {transaction.refundedTotal ? `(${money(Number(transaction.refundedTotal))} total)` : ""}
+              </p>
+              <div className="space-y-1">
+                {transaction.refunds.map((r) => (
+                  <div key={r.id} className="flex justify-between text-gray-600 text-xs">
+                    <span>
+                      {new Date(r.createdAt).toLocaleString()} — {r.reason}
+                      {r.approvedBy && ` (approved by ${r.approvedBy.name})`}
+                    </span>
+                    <span>{money(Number(r.amount))}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
           )}
 
           {printing.status}
@@ -163,6 +189,7 @@ export function TransactionDetailModal({
         open={!!action}
         onClose={() => setAction(null)}
         mode={action ?? "void"}
+        items={transaction.items}
         onConfirm={handleConfirm}
         busy={voidMutation.isPending || refundMutation.isPending}
         error={error}

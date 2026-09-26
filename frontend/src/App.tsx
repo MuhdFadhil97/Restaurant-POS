@@ -2,6 +2,8 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AppLayout } from "@/layouts/AppLayout";
 import { LoginPage } from "@/features/auth/LoginPage";
+import { ForgotPasswordPage } from "@/features/auth/ForgotPasswordPage";
+import { ResetPasswordPage } from "@/features/auth/ResetPasswordPage";
 import { DashboardPage } from "@/features/dashboard/DashboardPage";
 import { PosPage } from "@/features/pos/PosPage";
 import { TransactionsPage } from "@/features/transactions/TransactionsPage";
@@ -26,6 +28,8 @@ export function App() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/order/:token" element={<QrMenuPage />} />
       <Route path="/order/:token/status" element={<QrOrderStatusPage />} />
       <Route path="/einvoice/:uuid/share/:longId" element={<EInvoiceVerifyPage />} />

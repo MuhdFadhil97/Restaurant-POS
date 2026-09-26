@@ -14,5 +14,7 @@ router.get("/", controller.list);
 router.get("/:id", controller.getOne);
 router.post("/", validate({ body: createCampaignSchema }), controller.create);
 router.post("/:id/send", controller.send);
+router.post("/:id/pause", controller.pause);
+router.post("/:id/resume", controller.resume);
 
 export default router;

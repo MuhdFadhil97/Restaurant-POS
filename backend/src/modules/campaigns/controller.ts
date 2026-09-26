@@ -17,3 +17,11 @@ export const create = asyncHandler(async (req: Request, res: Response) => {
 export const send = asyncHandler(async (req: Request, res: Response) => {
   res.json(await service.sendCampaign(Number(req.params.id)));
 });
+
+export const pause = asyncHandler(async (req: Request, res: Response) => {
+  res.json(await service.pauseCampaign(Number(req.params.id)));
+});
+
+export const resume = asyncHandler(async (req: Request, res: Response) => {
+  res.json(await service.resumeCampaign(Number(req.params.id)));
+});

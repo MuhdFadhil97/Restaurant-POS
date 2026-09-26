@@ -1,9 +1,11 @@
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 import { Role } from "@prisma/client";
 import { prisma } from "../../lib/prisma";
 import { ApiError } from "../../lib/apiError";
 import { recordAudit } from "../../lib/audit";
 import { getEffectiveModules } from "../../lib/modules";
+import { issuePasswordResetLink } from "../auth/passwordReset";
 import { CreateUserInput, UpdateUserInput } from "./validation";
 
 const SALT_ROUNDS = 10;
@@ -59,7 +61,11 @@ export async function getUser(id: number) {
 }
 
 export async function createUser(input: CreateUserInput) {
-  const passwordHash = await bcrypt.hash(input.password, SALT_ROUNDS);
+  // No password given = invite: the account gets an unguessable random
+  // password no one is ever told, and the user is emailed a link to set
+  // their own instead of the admin choosing one for them.
+  const isInvite = !input.password;
+  const passwordHash = await bcrypt.hash(input.password ?? crypto.randomBytes(32).toString("hex"), SALT_ROUNDS);
   const user = await prisma.user.create({
     data: {
       email: input.email,
@@ -77,6 +83,9 @@ export async function createUser(input: CreateUserInput) {
     },
     include: INCLUDE_ACCESS,
   });
+  if (isInvite) {
+    await issuePasswordResetLink(user.id, user.email, user.name, "invite");
+  }
   return toDto(user);
 }
 
@@ -86,6 +95,16 @@ export async function updateUser(id: number, input: UpdateUserInput, actorUserId
 
   const { password, outletIds, moduleAccess, ...rest } = input;
   const passwordHash = password ? await bcrypt.hash(password, SALT_ROUNDS) : undefined;
+
+  // Changes that alter what a user is allowed to do, or who can authenticate
+  // as them, must take effect immediately rather than waiting for their
+  // current JWT to expire — bump tokenVersion so any live session is forced
+  // to re-login and pick up the change.
+  const revokesSession =
+    passwordHash !== undefined ||
+    (rest.role && rest.role !== existing.role) ||
+    moduleAccess !== undefined ||
+    rest.isActive === false;
 
   const user = await prisma.$transaction(async (tx) => {
     if (outletIds) {
@@ -106,6 +125,7 @@ export async function updateUser(id: number, input: UpdateUserInput, actorUserId
         ...rest,
         ...(passwordHash ? { passwordHash } : {}),
         ...(moduleAccess ? { moduleAccessCustomized: true } : {}),
+        ...(revokesSession ? { tokenVersion: { increment: 1 } } : {}),
       },
       include: INCLUDE_ACCESS,
     });
@@ -151,6 +171,31 @@ export async function updateUser(id: number, input: UpdateUserInput, actorUserId
   });
 
   return toDto(user);
+}
+
+// Admin-triggered: (re)sends a set/reset-password link. Works for a brand
+// new invite that never landed, or any existing user who's locked out —
+// same underlying mechanism as self-service "forgot password".
+export async function sendPasswordResetLink(id: number) {
+  const user = await prisma.user.findFirst({ where: { id, deletedAt: null } });
+  if (!user) throw ApiError.notFound("User not found");
+  await issuePasswordResetLink(user.id, user.email, user.name, "reset");
+}
+
+// Force-logout: invalidates every JWT already issued to this user without
+// changing any other field. Used e.g. when a device is lost/stolen or a
+// staff member's access needs to be cut off immediately.
+export async function revokeSessions(id: number, actorUserId: number) {
+  await getUser(id);
+  await prisma.$transaction(async (tx) => {
+    await tx.user.update({ where: { id }, data: { tokenVersion: { increment: 1 } } });
+    await recordAudit(tx, {
+      userId: actorUserId,
+      action: "USER_SESSIONS_REVOKED",
+      entityType: "User",
+      entityId: id,
+    });
+  });
 }
 
 export async function deleteUser(id: number) {

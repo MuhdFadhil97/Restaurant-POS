@@ -5,10 +5,13 @@ import { useSegments } from "@/api/segments";
 import {
   CampaignSendStatus,
   CampaignStatus,
+  CampaignTriggerType,
   CreateCampaignInput,
+  usePauseCampaign,
   useCampaign,
   useCampaigns,
   useCreateCampaign,
+  useResumeCampaign,
   useSendCampaign,
 } from "@/api/campaigns";
 
@@ -25,6 +28,16 @@ const SEND_STATUS_COLOR: Record<CampaignSendStatus, "green" | "red" | "yellow"> 
   SKIPPED_NO_CONSENT: "yellow",
   SKIPPED_NO_CONTACT: "yellow",
 };
+
+const TRIGGER_LABEL: Record<CampaignTriggerType, string> = {
+  MANUAL: "Manual",
+  EVENT_BIRTHDAY: "Automated — Birthday",
+  EVENT_WINBACK: "Automated — Win-back",
+};
+
+function isAutomated(triggerType: CampaignTriggerType) {
+  return triggerType !== "MANUAL";
+}
 
 export function CampaignsTab() {
   const { data: campaigns, isLoading } = useCampaigns();
@@ -43,6 +56,7 @@ export function CampaignsTab() {
             <tr>
               <th className="px-4 py-2">Name</th>
               <th className="px-4 py-2">Segment</th>
+              <th className="px-4 py-2">Trigger</th>
               <th className="px-4 py-2">Status</th>
               <th className="px-4 py-2">Sent / Failed / Skipped</th>
               <th className="px-4 py-2"></th>
@@ -51,7 +65,7 @@ export function CampaignsTab() {
           <tbody className="divide-y divide-gray-100">
             {isLoading && (
               <tr>
-                <td colSpan={5} className="px-4 py-8 text-center">
+                <td colSpan={6} className="px-4 py-8 text-center">
                   <Spinner />
                 </td>
               </tr>
@@ -60,8 +74,13 @@ export function CampaignsTab() {
               <tr key={c.id} className="hover:bg-gray-50">
                 <td className="px-4 py-2">{c.name}</td>
                 <td className="px-4 py-2 text-gray-500">{c.segment.name}</td>
+                <td className="px-4 py-2 text-gray-500">{TRIGGER_LABEL[c.triggerType]}</td>
                 <td className="px-4 py-2">
-                  <Badge color={STATUS_COLOR[c.status]}>{c.status}</Badge>
+                  {isAutomated(c.triggerType) ? (
+                    <Badge color={c.pausedAt ? "gray" : "green"}>{c.pausedAt ? "Paused" : "Active"}</Badge>
+                  ) : (
+                    <Badge color={STATUS_COLOR[c.status]}>{c.status}</Badge>
+                  )}
                 </td>
                 <td className="px-4 py-2 text-gray-500">
                   {c.counts.sent} / {c.counts.failed} / {c.counts.skipped}
@@ -75,7 +94,7 @@ export function CampaignsTab() {
             ))}
             {campaigns?.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-gray-400">
+                <td colSpan={6} className="px-4 py-8 text-center text-gray-400">
                   No campaigns yet.
                 </td>
               </tr>
@@ -97,6 +116,7 @@ function CampaignFormModal({ open, onClose }: { open: boolean; onClose: () => vo
 
   const [name, setName] = useState("");
   const [segmentId, setSegmentId] = useState("");
+  const [triggerType, setTriggerType] = useState<CampaignTriggerType>("MANUAL");
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
   const [discountId, setDiscountId] = useState("");
@@ -104,6 +124,7 @@ function CampaignFormModal({ open, onClose }: { open: boolean; onClose: () => vo
   function reset() {
     setName("");
     setSegmentId("");
+    setTriggerType("MANUAL");
     setSubject("");
     setBody("");
     setDiscountId("");
@@ -114,6 +135,8 @@ function CampaignFormModal({ open, onClose }: { open: boolean; onClose: () => vo
     const input: CreateCampaignInput = {
       name,
       segmentId: Number(segmentId),
+      channel: "EMAIL",
+      triggerType,
       subject,
       body,
       discountId: discountId ? Number(discountId) : undefined,
@@ -141,6 +164,21 @@ function CampaignFormModal({ open, onClose }: { open: boolean; onClose: () => vo
             ))}
           </Select>
         </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Trigger</label>
+          <Select value={triggerType} onChange={(e) => setTriggerType(e.target.value as CampaignTriggerType)}>
+            <option value="MANUAL">Manual (send once, on demand)</option>
+            <option value="EVENT_BIRTHDAY">Automated — customer birthday</option>
+            <option value="EVENT_WINBACK">Automated — win-back lapsed customers</option>
+          </Select>
+        </div>
+        {triggerType !== "MANUAL" && (
+          <p className="text-xs text-gray-500 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
+            This runs automatically: every hour, anyone newly matching "{segments?.find((s) => String(s.id) === segmentId)?.name ?? "the selected segment"}"
+            is sent this message, without repeating to the same customer within 180 days. Pause it anytime from the
+            campaign's detail view.
+          </p>
+        )}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Attach a discount (optional)</label>
           <Select value={discountId} onChange={(e) => setDiscountId(e.target.value)}>
@@ -185,11 +223,23 @@ function CampaignFormModal({ open, onClose }: { open: boolean; onClose: () => vo
 function CampaignDetailModal({ campaignId, onClose }: { campaignId: number | null; onClose: () => void }) {
   const { data: campaign, isLoading } = useCampaign(campaignId ?? undefined);
   const sendCampaign = useSendCampaign();
+  const pauseCampaign = usePauseCampaign();
+  const resumeCampaign = useResumeCampaign();
 
   async function handleSend() {
     if (!campaignId) return;
     if (!window.confirm("Send this campaign now? This can't be undone.")) return;
     await sendCampaign.mutateAsync(campaignId);
+  }
+
+  async function handlePause() {
+    if (!campaignId) return;
+    await pauseCampaign.mutateAsync(campaignId);
+  }
+
+  async function handleResume() {
+    if (!campaignId) return;
+    await resumeCampaign.mutateAsync(campaignId);
   }
 
   return (
@@ -199,20 +249,49 @@ function CampaignDetailModal({ campaignId, onClose }: { campaignId: number | nul
       ) : (
         <div className="space-y-4">
           <div className="flex items-center gap-3">
-            <Badge color={STATUS_COLOR[campaign.status]}>{campaign.status}</Badge>
-            <span className="text-sm text-gray-500">Segment: {campaign.segment.name}</span>
+            {isAutomated(campaign.triggerType) ? (
+              <Badge color={campaign.pausedAt ? "gray" : "green"}>{campaign.pausedAt ? "Paused" : "Active"}</Badge>
+            ) : (
+              <Badge color={STATUS_COLOR[campaign.status]}>{campaign.status}</Badge>
+            )}
+            <span className="text-sm text-gray-500">
+              {TRIGGER_LABEL[campaign.triggerType]} · {campaign.channel} · Segment: {campaign.segment.name}
+            </span>
           </div>
           <div className="text-sm">
             <p className="font-medium">{campaign.subject}</p>
             <p className="text-gray-500 whitespace-pre-wrap mt-1">{campaign.body}</p>
           </div>
 
-          {campaign.status === "DRAFT" && (
+          {campaign.triggerType === "MANUAL" && campaign.status === "DRAFT" && (
             <Button onClick={handleSend} disabled={sendCampaign.isPending}>
               {sendCampaign.isPending ? "Sending…" : "Send Now"}
             </Button>
           )}
+          {isAutomated(campaign.triggerType) && (
+            <div className="flex items-center gap-2">
+              {campaign.pausedAt ? (
+                <Button onClick={handleResume} disabled={resumeCampaign.isPending}>
+                  {resumeCampaign.isPending ? "Resuming…" : "Resume"}
+                </Button>
+              ) : (
+                <Button variant="secondary" onClick={handlePause} disabled={pauseCampaign.isPending}>
+                  {pauseCampaign.isPending ? "Pausing…" : "Pause"}
+                </Button>
+              )}
+              <span className="text-xs text-gray-400">Runs automatically every hour while active.</span>
+            </div>
+          )}
           {sendCampaign.isError && <ErrorMessage message="Failed to send campaign." />}
+          {campaign.status === "COMPLETED" && campaign.counts.failed > 0 && (
+            <ErrorMessage
+              message={
+                campaign.counts.sent === 0
+                  ? `Every send failed (${campaign.counts.failed} of ${campaign.sends.length}). See recipient errors below.`
+                  : `${campaign.counts.failed} of ${campaign.sends.length} sends failed. See recipient errors below.`
+              }
+            />
+          )}
 
           {campaign.sends.length > 0 && (
             <div>
@@ -230,6 +309,9 @@ function CampaignDetailModal({ campaignId, onClose }: { campaignId: number | nul
                       <td className="px-3 py-1.5">{s.customer.name}</td>
                       <td className="px-3 py-1.5">
                         <Badge color={SEND_STATUS_COLOR[s.status]}>{s.status.replace(/_/g, " ")}</Badge>
+                        {s.status === "FAILED" && s.errorMessage && (
+                          <span className="ml-2 text-xs text-red-600">{s.errorMessage}</span>
+                        )}
                       </td>
                     </tr>
                   ))}

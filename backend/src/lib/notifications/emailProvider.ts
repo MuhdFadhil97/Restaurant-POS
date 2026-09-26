@@ -1,5 +1,13 @@
+import dns from "dns";
 import nodemailer, { Transporter } from "nodemailer";
 import { env } from "../../config/env";
+
+// Some hosts (e.g. Railway) have no outbound IPv6 route. Gmail's SMTP
+// hostname resolves to both A and AAAA records, and Node picks whichever
+// DNS returns first — when that's the AAAA record, the connection fails
+// with ENETUNREACH. nodemailer v10's typed options dropped the old
+// per-transport `family` knob, so prefer IPv4 at the process level instead.
+dns.setDefaultResultOrder("ipv4first");
 
 let transporter: Transporter | null = null;
 
@@ -11,11 +19,6 @@ function getTransporter(): Transporter | null {
       port: env.smtpPort,
       secure: env.smtpPort === 465,
       auth: env.smtpUser ? { user: env.smtpUser, pass: env.smtpPass } : undefined,
-      // Some hosts (e.g. Railway) have no outbound IPv6 route. Gmail's SMTP
-      // hostname resolves to both A and AAAA records, and Node picks
-      // whichever DNS returns first — when that's the AAAA record, the
-      // connection fails with ENETUNREACH. Force IPv4 to avoid it.
-      family: 4,
     });
   }
   return transporter;

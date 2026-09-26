@@ -1,5 +1,5 @@
 export type Role = "ADMIN" | "MANAGER" | "CASHIER" | "KITCHEN";
-export type TransactionStatus = "HELD" | "OPEN" | "COMPLETED" | "VOIDED" | "REFUNDED";
+export type TransactionStatus = "HELD" | "OPEN" | "COMPLETED" | "VOIDED" | "REFUNDED" | "PARTIALLY_REFUNDED";
 export type TransactionOrigin = "POS" | "QR" | "DELIVERY";
 export type PaymentMethod = "CASH" | "CARD" | "EWALLET" | "GIFT_CARD" | "LOYALTY_POINTS" | "ONLINE";
 export type DeliveryProvider = "GRAB" | "FOODPANDA" | "DOORDASH" | "CUSTOM";
@@ -289,6 +289,7 @@ export interface TransactionItemDto {
   discountAmount: number;
   taxAmount: number;
   lineTotal: number;
+  refundedQuantity?: number;
   prepStatus?: PrepStatus;
   preparingAt?: string | null;
   readyAt?: string | null;
@@ -339,10 +340,22 @@ export interface TransactionDto {
   pointsRedeemed?: number;
   notes?: string | null;
   voidReason?: string | null;
+  refundedTotal?: number;
+  refunds?: RefundDto[];
   items: TransactionItemDto[];
   payments: PaymentDto[];
   createdAt: string;
   _count?: { items: number };
+}
+
+export interface RefundDto {
+  id: number;
+  amount: number;
+  reason: string;
+  createdAt: string;
+  refundedBy?: { id: number; name: string };
+  approvedBy?: { id: number; name: string };
+  items: { id: number; transactionItemId: number; quantity: number; amount: number }[];
 }
 
 export interface InventoryMovement {

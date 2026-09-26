@@ -7,6 +7,7 @@ import {
   createDraftRequestSchema,
   finalizeSchema,
   listQuerySchema,
+  refundSchema,
   updateItemSchema,
   updateTransactionSchema,
   voidSchema,
@@ -30,6 +31,6 @@ router.patch("/:id/items/:itemId", validate({ body: updateItemSchema }), control
 router.delete("/:id/items/:itemId", controller.removeItem);
 
 router.post("/:id/void", validate({ body: voidSchema }), controller.voidTransaction);
-router.post("/:id/refund", validate({ body: voidSchema }), controller.refundTransaction);
+router.post("/:id/refund", validate({ body: refundSchema }), controller.refundTransaction);
 
 export default router;

@@ -6,7 +6,9 @@ const moduleKeySchema = z.enum(MODULE_KEYS);
 export const createUserSchema = z.object({
   email: z.string().email(),
   username: z.string().min(3),
-  password: z.string().min(8),
+  // Omit to invite the user instead: they're emailed a link to set their
+  // own password rather than the admin choosing one for them.
+  password: z.string().min(8).optional(),
   name: z.string().min(1),
   role: z.enum(["ADMIN", "MANAGER", "CASHIER"]),
   outletIds: z.array(z.coerce.number().int()).default([]),

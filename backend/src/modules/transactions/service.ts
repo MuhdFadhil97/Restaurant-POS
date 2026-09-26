@@ -12,6 +12,7 @@ import {
   CreateDraftInput,
   FinalizeInput,
   ListQuery,
+  RefundInput,
   UpdateItemInput,
   UpdateTransactionInput,
   VoidInput,
@@ -33,6 +34,14 @@ const detailInclude = {
   customer: true,
   cashier: { select: { id: true, name: true } },
   orderDiscount: true,
+  refunds: {
+    include: {
+      items: true,
+      refundedBy: { select: { id: true, name: true } },
+      approvedBy: { select: { id: true, name: true } },
+    },
+    orderBy: { createdAt: "desc" as const },
+  },
 };
 
 // Recomputes and persists every item's price breakdown plus the parent
@@ -689,12 +698,17 @@ async function resolveApproval(
     return actorUserId;
   }
 
-  if (!input.approverId || !input.approverPassword) {
-    throw ApiError.forbidden("Manager approval (approverId + approverPassword) is required");
+  if (!input.approverUsername || !input.approverPassword) {
+    throw ApiError.forbidden("Manager approval (approverUsername + approverPassword) is required");
   }
 
   const approver = await tx.user.findFirst({
-    where: { id: input.approverId, isActive: true, deletedAt: null, role: { in: ["ADMIN", "MANAGER"] } },
+    where: {
+      isActive: true,
+      deletedAt: null,
+      role: { in: ["ADMIN", "MANAGER"] },
+      OR: [{ username: input.approverUsername }, { email: input.approverUsername }],
+    },
   });
   if (!approver) {
     throw ApiError.forbidden("Approver not found or not authorized");
@@ -751,8 +765,8 @@ export async function voidTransaction(
       include: { items: true },
     });
 
-    if (transaction.status === "VOIDED" || transaction.status === "REFUNDED") {
-      throw ApiError.badRequest("Transaction is already voided/refunded");
+    if (transaction.status === "VOIDED" || transaction.status === "REFUNDED" || transaction.status === "PARTIALLY_REFUNDED") {
+      throw ApiError.badRequest("Transaction is already voided/refunded — use a refund for any remaining amount");
     }
 
     const approvedByUserId = await resolveApproval(tx, actorUserId, actorRole, input);
@@ -803,7 +817,7 @@ export async function refundTransaction(
   transactionId: number,
   actorUserId: number,
   actorRole: string,
-  input: VoidInput
+  input: RefundInput
 ) {
   return prisma.$transaction(async (tx) => {
     const transaction = await tx.transaction.findUniqueOrThrow({
@@ -811,25 +825,104 @@ export async function refundTransaction(
       include: { items: true },
     });
 
-    if (transaction.status !== "COMPLETED") {
-      throw ApiError.badRequest("Only completed transactions can be refunded");
+    if (transaction.status !== "COMPLETED" && transaction.status !== "PARTIALLY_REFUNDED") {
+      throw ApiError.badRequest("Only completed (or already partially refunded) transactions can be refunded");
+    }
+
+    const remaining = new Map(transaction.items.map((i) => [i.id, i.quantity - i.refundedQuantity]));
+
+    // No `items` = refund everything still outstanding (old one-call full
+    // refund behavior, still the default for the common case).
+    const requested =
+      input.items ??
+      transaction.items
+        .filter((i) => remaining.get(i.id)! > 0)
+        .map((i) => ({ transactionItemId: i.id, quantity: remaining.get(i.id)! }));
+
+    if (requested.length === 0) {
+      throw ApiError.badRequest("Nothing left to refund on this transaction");
+    }
+
+    const itemsById = new Map(transaction.items.map((i) => [i.id, i]));
+    for (const r of requested) {
+      const item = itemsById.get(r.transactionItemId);
+      if (!item) throw ApiError.badRequest(`Item ${r.transactionItemId} does not belong to this transaction`);
+      const left = remaining.get(r.transactionItemId)!;
+      if (r.quantity > left) {
+        throw ApiError.badRequest(
+          `Cannot refund ${r.quantity} of transaction item ${r.transactionItemId} — only ${left} remain unrefunded`
+        );
+      }
     }
 
     const approvedByUserId = await resolveApproval(tx, actorUserId, actorRole, input);
 
+    // Line items' lineTotal only covers that line's own subtotal/discount/
+    // tax — it doesn't carry any share of the order-level discount or
+    // service charge (and its tax), so summing lineTotal alone would never
+    // add up to `total`. Scale each line's share by total/sum(lineTotal) so
+    // refunding every item always sums to exactly the transaction total.
+    const sumLineTotals = transaction.items.reduce((sum, i) => sum + Number(i.lineTotal), 0);
+    const scaleFactor = sumLineTotals > 0 ? Number(transaction.total) / sumLineTotals : 0;
+
+    const refundLines = requested.map((r) => {
+      const item = itemsById.get(r.transactionItemId)!;
+      const perUnit = (Number(item.lineTotal) / item.quantity) * scaleFactor;
+      return { ...r, item, amount: round2(perUnit * r.quantity) };
+    });
+    const refundAmount = round2(refundLines.reduce((sum, l) => sum + l.amount, 0));
+
     await restockItems(
       tx,
       transaction.outletId,
-      transaction.items.map((i) => ({ productId: i.productId, variantId: i.variantId, quantity: i.quantity })),
+      refundLines.map((l) => ({ productId: l.item.productId, variantId: l.item.variantId, quantity: l.quantity })),
       actorUserId
     );
 
-    const einvoiceCancel = transaction.einvoiceStatus === "GENERATED" ? { einvoiceStatus: "CANCELLED" as const } : {};
+    for (const l of refundLines) {
+      await tx.transactionItem.update({
+        where: { id: l.transactionItemId },
+        data: { refundedQuantity: { increment: l.quantity } },
+      });
+    }
+
+    const newRefundedTotal = round2(Number(transaction.refundedTotal) + refundAmount);
+    // Every item's quantity fully accounted for is the authoritative signal
+    // — robust against cent-level rounding drift that a pure dollar
+    // comparison against `total` could get stuck just short of.
+    const isFullyRefunded = transaction.items.every((i) => {
+      const refundedNow = refundLines.find((l) => l.transactionItemId === i.id)?.quantity ?? 0;
+      return i.refundedQuantity + refundedNow >= i.quantity;
+    });
+    const newStatus = isFullyRefunded ? "REFUNDED" : "PARTIALLY_REFUNDED";
+    // Snap to the exact total on full exhaustion — proportional per-line
+    // rounding can leave the sum a cent off either way otherwise.
+    const finalRefundedTotal = isFullyRefunded ? Number(transaction.total) : newRefundedTotal;
+    const einvoiceCancel =
+      isFullyRefunded && transaction.einvoiceStatus === "GENERATED" ? { einvoiceStatus: "CANCELLED" as const } : {};
+
+    await tx.refund.create({
+      data: {
+        transactionId,
+        amount: refundAmount,
+        reason: input.reason,
+        refundedByUserId: actorUserId,
+        approvedByUserId,
+        items: {
+          create: refundLines.map((l) => ({
+            transactionItemId: l.transactionItemId,
+            quantity: l.quantity,
+            amount: l.amount,
+          })),
+        },
+      },
+    });
 
     const updated = await tx.transaction.update({
       where: { id: transactionId },
       data: {
-        status: "REFUNDED",
+        status: newStatus,
+        refundedTotal: finalRefundedTotal,
         voidReason: input.reason,
         voidedAt: new Date(),
         voidedByUserId: actorUserId,
@@ -845,7 +938,13 @@ export async function refundTransaction(
       entityType: "Transaction",
       entityId: transactionId,
       outletId: transaction.outletId,
-      details: { reason: input.reason, approvedByUserId },
+      details: {
+        reason: input.reason,
+        approvedByUserId,
+        amount: refundAmount,
+        items: refundLines.map((l) => ({ transactionItemId: l.transactionItemId, quantity: l.quantity })),
+        fullyRefunded: isFullyRefunded,
+      },
     });
 
     return updated;

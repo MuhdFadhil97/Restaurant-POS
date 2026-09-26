@@ -58,16 +58,27 @@ export const updateTransactionSchema = z.object({
 
 export const voidSchema = z.object({
   reason: z.string().min(1),
-  approverId: z.coerce.number().int().optional(),
+  // Username, not a numeric ID — a cashier shouldn't need to know a
+  // manager's internal database ID to get their approval.
+  approverUsername: z.string().min(1).optional(),
   approverPassword: z.string().optional(),
 });
 
-export const refundSchema = voidSchema;
+const refundItemInput = z.object({
+  transactionItemId: z.coerce.number().int(),
+  quantity: z.number().int().positive(),
+});
+
+// `items` omitted = refund everything still refundable (the old full-refund
+// behavior); pass it to refund only specific lines/quantities instead.
+export const refundSchema = voidSchema.extend({
+  items: z.array(refundItemInput).min(1).optional(),
+});
 
 export const listQuerySchema = z.object({
   outletId: z.coerce.number().int().optional(),
   cashierId: z.coerce.number().int().optional(),
-  status: z.enum(["HELD", "OPEN", "COMPLETED", "VOIDED", "REFUNDED"]).optional(),
+  status: z.enum(["HELD", "OPEN", "COMPLETED", "VOIDED", "REFUNDED", "PARTIALLY_REFUNDED"]).optional(),
   paymentMethod: z.enum(["CASH", "CARD", "EWALLET", "GIFT_CARD", "LOYALTY_POINTS"]).optional(),
   dateFrom: z.string().datetime().optional(),
   dateTo: z.string().datetime().optional(),
@@ -80,4 +91,5 @@ export type AddItemInput = z.infer<typeof addItemSchema>;
 export type UpdateItemInput = z.infer<typeof updateItemSchema>;
 export type UpdateTransactionInput = z.infer<typeof updateTransactionSchema>;
 export type VoidInput = z.infer<typeof voidSchema>;
+export type RefundInput = z.infer<typeof refundSchema>;
 export type ListQuery = z.infer<typeof listQuerySchema>;

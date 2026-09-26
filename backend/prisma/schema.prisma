@@ -41,7 +41,8 @@ enum TransactionStatus {
   OPEN // F&B: attached to a table, still accumulating items
   COMPLETED
   VOIDED
-  REFUNDED
+  REFUNDED // fully refunded — refundedTotal has reached total
+  PARTIALLY_REFUNDED // one or more (but not all) items/quantity refunded
 }
 
 enum TransactionOrigin {
@@ -276,6 +277,18 @@ model User {
   failedLoginAttempts Int       @default(0) @map("failed_login_attempts")
   lockedUntil         DateTime? @map("locked_until")
 
+  // Bumped to invalidate all previously-issued JWTs for this user (force
+  // logout / session revocation). Checked against the token's own copy on
+  // every request; a mismatch means the token was issued before the bump.
+  tokenVersion Int @default(0) @map("token_version")
+
+  // Self-service password reset & admin-sent invite links share this single
+  // mechanism: a random token is generated, only its SHA-256 hash is stored
+  // (so a DB leak doesn't hand out usable tokens), and it expires. One
+  // active token per user — requesting a new one overwrites the old.
+  passwordResetTokenHash String?   @map("password_reset_token_hash")
+  passwordResetExpiresAt DateTime? @map("password_reset_expires_at")
+
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @updatedAt @map("updated_at")
   deletedAt DateTime? @map("deleted_at")
@@ -286,6 +299,8 @@ model User {
   cashierTransactions     Transaction[]         @relation("CashierTransactions")
   voidedTransactions      Transaction[]         @relation("VoidedByUser")
   approvedTransactions    Transaction[]         @relation("ApprovedByUser")
+  refundsGiven            Refund[]              @relation("RefundedByUser")
+  refundsApproved         Refund[]              @relation("RefundApprovedByUser")
   inventoryMovements      InventoryMovement[]
   cashSessions            CashSession[]
   auditLogs               AuditLog[]
@@ -704,6 +719,12 @@ model Campaign {
   status CampaignStatus @default(DRAFT)
   sentAt DateTime?      @map("sent_at")
 
+  // EVENT_BIRTHDAY/EVENT_WINBACK campaigns run indefinitely (the scheduler
+  // re-evaluates their segment on every tick) rather than going through the
+  // one-shot DRAFT->SENDING->COMPLETED lifecycle — pausedAt is how an admin
+  // stops one without deleting its send history. Unused for MANUAL campaigns.
+  pausedAt DateTime? @map("paused_at")
+
   createdByUserId Int @map("created_by_user_id")
 
   createdAt DateTime @default(now()) @map("created_at")
@@ -846,6 +867,11 @@ model Transaction {
   voidedByUserId   Int?      @map("voided_by_user_id")
   approvedByUserId Int?      @map("approved_by_user_id")
 
+  // Running total of everything refunded so far via Refund records (partial
+  // or, cumulatively, full). Status flips to REFUNDED once this reaches
+  // `total`; PARTIALLY_REFUNDED while it's between 0 and total.
+  refundedTotal Decimal @default(0) @map("refunded_total") @db.Decimal(12, 2)
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
@@ -862,8 +888,42 @@ model Transaction {
   printJobs     PrintJob[]
   reservation   Reservation?
   deliveryOrder DeliveryOrder?
+  refunds       Refund[]
 
   @@map("transactions")
+}
+
+// One row per refund action (full or partial) against a COMPLETED /
+// PARTIALLY_REFUNDED transaction — a transaction can accumulate several of
+// these until refundedTotal reaches total.
+model Refund {
+  id               Int      @id @default(autoincrement())
+  transactionId    Int      @map("transaction_id")
+  amount           Decimal  @db.Decimal(12, 2)
+  reason           String
+  refundedByUserId Int      @map("refunded_by_user_id")
+  approvedByUserId Int      @map("approved_by_user_id")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  transaction Transaction  @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  refundedBy  User         @relation("RefundedByUser", fields: [refundedByUserId], references: [id])
+  approvedBy  User         @relation("RefundApprovedByUser", fields: [approvedByUserId], references: [id])
+  items       RefundItem[]
+
+  @@map("refunds")
+}
+
+model RefundItem {
+  id                Int     @id @default(autoincrement())
+  refundId          Int     @map("refund_id")
+  transactionItemId Int     @map("transaction_item_id")
+  quantity          Int
+  amount            Decimal @db.Decimal(12, 2)
+
+  refund          Refund          @relation(fields: [refundId], references: [id], onDelete: Cascade)
+  transactionItem TransactionItem @relation(fields: [transactionItemId], references: [id], onDelete: Cascade)
+
+  @@map("refund_items")
 }
 
 // Backs the atomic per-day counter used to number receipts (RECYYYYMMDDXXXXXX).
@@ -888,6 +948,10 @@ model TransactionItem {
   taxAmount      Decimal @default(0) @map("tax_amount") @db.Decimal(12, 2)
   lineTotal      Decimal @map("line_total") @db.Decimal(12, 2)
 
+  // How much of `quantity` has been refunded so far via RefundItem rows.
+  // quantity - refundedQuantity is what's still eligible for a future refund.
+  refundedQuantity Int @default(0) @map("refunded_quantity")
+
   // Kitchen Display order-routing status.
   prepStatus  PrepStatus @default(QUEUED) @map("prep_status")
   preparingAt DateTime?  @map("preparing_at")
@@ -904,6 +968,7 @@ model TransactionItem {
   product     Product         @relation(fields: [productId], references: [id])
   variant     ProductVariant? @relation(fields: [variantId], references: [id])
   discount    Discount?       @relation(fields: [discountId], references: [id])
+  refundItems RefundItem[]
 
   @@map("transaction_items")
 }

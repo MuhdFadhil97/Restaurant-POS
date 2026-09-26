@@ -14,6 +14,7 @@ const statusColor: Record<string, "gray" | "green" | "red" | "yellow" | "blue"> 
   COMPLETED: "green",
   VOIDED: "red",
   REFUNDED: "red",
+  PARTIALLY_REFUNDED: "yellow",
 };
 
 export function TransactionsPage() {
@@ -41,6 +42,7 @@ export function TransactionsPage() {
             <option value="COMPLETED">Completed</option>
             <option value="VOIDED">Voided</option>
             <option value="REFUNDED">Refunded</option>
+            <option value="PARTIALLY_REFUNDED">Partially refunded</option>
           </Select>
           <Select
             value={paymentMethod}

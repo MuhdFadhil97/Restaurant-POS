@@ -1,5 +1,5 @@
 import { FormEvent, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { login } from "@/api/auth";
 import { useAuthStore } from "@/store/authStore";
 import { getErrorMessage } from "@/api/client";
@@ -9,11 +9,12 @@ import { Button, Card, ErrorMessage, Input } from "@/components/ui";
 export function LoginPage() {
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
-  const [showForgotHint, setShowForgotHint] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const setSession = useAuthStore((s) => s.setSession);
   const navigate = useNavigate();
+  const location = useLocation();
+  const passwordResetDone = Boolean((location.state as { passwordResetDone?: boolean } | null)?.passwordResetDone);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -65,13 +66,9 @@ export function LoginPage() {
             <div>
               <div className="mb-1 flex items-center justify-between">
                 <label className="block text-sm font-medium text-gray-700">Password</label>
-                <button
-                  type="button"
-                  onClick={() => setShowForgotHint((v) => !v)}
-                  className="text-sm text-orange-600 hover:underline"
-                >
+                <Link to="/forgot-password" className="text-sm text-orange-600 hover:underline">
                   Forgot?
-                </button>
+                </Link>
               </div>
               <Input
                 type="password"
@@ -80,12 +77,12 @@ export function LoginPage() {
                 className="focus:!border-orange-500 focus:!ring-orange-500"
                 required
               />
-              {showForgotHint && (
-                <p className="mt-1 text-xs text-gray-500">
-                  Ask a manager or admin to reset your password from Settings &rarr; Users.
-                </p>
-              )}
             </div>
+            {passwordResetDone && (
+              <p className="rounded-md bg-green-50 px-3 py-2 text-sm text-green-700">
+                Password updated — sign in with your new password.
+              </p>
+            )}
             {error && <ErrorMessage message={error} />}
             <Button type="submit" className="w-full !bg-orange-600 hover:!bg-orange-700" disabled={loading}>
               {loading ? "Signing in..." : "Sign In"}

@@ -24,3 +24,14 @@ export const remove = asyncHandler(async (req: Request, res: Response) => {
   await service.deleteUser(Number(req.params.id));
   res.status(204).send();
 });
+
+export const revokeSessions = asyncHandler(async (req: Request, res: Response) => {
+  if (!req.user) throw ApiError.unauthorized();
+  await service.revokeSessions(Number(req.params.id), req.user.userId);
+  res.status(204).send();
+});
+
+export const sendPasswordResetLink = asyncHandler(async (req: Request, res: Response) => {
+  await service.sendPasswordResetLink(Number(req.params.id));
+  res.status(204).send();
+});

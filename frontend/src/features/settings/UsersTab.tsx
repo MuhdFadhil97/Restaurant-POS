@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useState } from "react";
 import { useOutlets } from "@/api/outlets";
-import { useCreateUser, useUpdateUser, useUsers } from "@/api/users";
+import { useCreateUser, useRevokeUserSessions, useSendPasswordResetLink, useUpdateUser, useUsers } from "@/api/users";
 import { Role, UserDto } from "@/api/types";
 import { Badge, Button, Card, Input, Modal, Select } from "@/components/ui";
 import { MAIN_MODULES, SETTINGS_MODULES, getDefaultModulesForRole } from "@/config/modules";
@@ -10,8 +10,23 @@ export function UsersTab() {
   const { data: outlets } = useOutlets();
   const createUser = useCreateUser();
   const updateUser = useUpdateUser();
+  const revokeSessions = useRevokeUserSessions();
+  const sendResetLink = useSendPasswordResetLink();
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<UserDto | null>(null);
+  const [resetLinkSentFor, setResetLinkSentFor] = useState<number | null>(null);
+
+  async function handleForceLogout(u: UserDto) {
+    if (!window.confirm(`Force logout "${u.name}"? They'll be signed out of every device immediately.`)) return;
+    await revokeSessions.mutateAsync(u.id);
+  }
+
+  async function handleSendResetLink(u: UserDto) {
+    if (!window.confirm(`Send "${u.name}" a link to set/reset their password?`)) return;
+    await sendResetLink.mutateAsync(u.id);
+    setResetLinkSentFor(u.id);
+    setTimeout(() => setResetLinkSentFor((current) => (current === u.id ? null : current)), 3000);
+  }
 
   return (
     <div className="space-y-4">
@@ -42,9 +57,15 @@ export function UsersTab() {
                   {outlets?.filter((o) => u.outletIds.includes(o.id)).map((o) => o.name).join(", ") || "-"}
                 </td>
                 <td className="px-4 py-2">{u.isActive ? "Active" : "Inactive"}</td>
-                <td className="px-4 py-2 text-right">
+                <td className="px-4 py-2 text-right space-x-3">
                   <button onClick={() => setEditing(u)} className="text-brand-600 hover:underline">
                     Edit
+                  </button>
+                  <button onClick={() => handleSendResetLink(u)} className="text-brand-600 hover:underline">
+                    {resetLinkSentFor === u.id ? "Sent!" : "Send reset link"}
+                  </button>
+                  <button onClick={() => handleForceLogout(u)} className="text-red-600 hover:underline">
+                    Force logout
                   </button>
                 </td>
               </tr>
@@ -98,6 +119,7 @@ function UserFormModal({
   const [email, setEmail] = useState(initial?.email ?? "");
   const [username, setUsername] = useState(initial?.username ?? "");
   const [password, setPassword] = useState("");
+  const [sendInvite, setSendInvite] = useState(!initial);
   const [role, setRole] = useState<Role>(initial?.role ?? "CASHIER");
   const [outletIds, setOutletIds] = useState<number[]>(initial?.outletIds ?? []);
   const [isActive, setIsActive] = useState(initial?.isActive ?? true);
@@ -116,6 +138,7 @@ function UserFormModal({
       setEmail(initial?.email ?? "");
       setUsername(initial?.username ?? "");
       setPassword("");
+      setSendInvite(!initial);
       setRole(initial?.role ?? "CASHIER");
       setOutletIds(initial?.outletIds ?? []);
       setIsActive(initial?.isActive ?? true);
@@ -142,7 +165,12 @@ function UserFormModal({
     setSubmitting(true);
     try {
       const payload: Record<string, unknown> = { name, email, username, role, outletIds, isActive, moduleAccess };
-      if (password) payload.password = password;
+      // Creating with sendInvite on omits the password entirely — the
+      // backend generates one no one ever sees and emails a set-password
+      // link instead.
+      if (!(!initial && sendInvite)) {
+        if (password) payload.password = password;
+      }
       await onSubmit(payload);
     } finally {
       setSubmitting(false);
@@ -164,16 +192,24 @@ function UserFormModal({
           <label className="block text-xs text-gray-500 mb-1">Username</label>
           <Input placeholder="Username" value={username} onChange={(e) => setUsername(e.target.value)} required />
         </div>
-        <div>
-          <label className="block text-xs text-gray-500 mb-1">{initial ? "New password" : "Password"}</label>
-          <Input
-            placeholder={initial ? "Leave blank to keep current password" : "Password"}
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required={!initial}
-          />
-        </div>
+        {!initial && (
+          <label className="flex items-center gap-2 text-sm">
+            <input type="checkbox" checked={sendInvite} onChange={(e) => setSendInvite(e.target.checked)} />
+            Email them a link to set their own password (recommended)
+          </label>
+        )}
+        {!(!initial && sendInvite) && (
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">{initial ? "New password" : "Password"}</label>
+            <Input
+              placeholder={initial ? "Leave blank to keep current password" : "Password"}
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required={!initial}
+            />
+          </div>
+        )}
         <div>
           <label className="block text-xs text-gray-500 mb-1">Role</label>
           <Select value={role} onChange={(e) => handleRoleChange(e.target.value as Role)}>

@@ -1,6 +1,9 @@
 FROM node:20-slim
 
-RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
+# chromium: puppeteer-core ships no browser; e-invoice receipt PDFs and report
+# PDF exports render through it (see reports/export/browserPool.ts).
+RUN apt-get update -y && apt-get install -y openssl chromium fonts-liberation && rm -rf /var/lib/apt/lists/*
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 
 WORKDIR /app
 

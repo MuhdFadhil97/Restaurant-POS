@@ -98,6 +98,7 @@ export function PosPage() {
         unitPrice: Number(item.unitPrice),
         discountAmount: Number(item.discountAmount),
         lineTotal: Number(item.lineTotal),
+        notes: item.notes,
         kitchenPending: !item.kitchenPrintedAt,
       }))
     : localCart.map((item) => {
@@ -110,6 +111,7 @@ export function PosPage() {
           unitPrice: p.unitPrice,
           discountAmount: p.discountAmount,
           lineTotal: p.lineTotal,
+          notes: item.notes,
         };
       });
 
@@ -165,6 +167,7 @@ export function PosPage() {
       variantId: item.variant?.id,
       quantity: item.quantity,
       discountId: item.discount?.id,
+      notes: item.notes?.trim() || undefined,
     }));
   }
 
@@ -183,7 +186,8 @@ export function PosPage() {
       return;
     }
     setLocalCart((prev) => {
-      const idx = prev.findIndex((i) => i.product.id === product.id && i.variant?.id === variant?.id);
+      // A line with a note is its own dish, so it doesn't absorb plain taps.
+      const idx = prev.findIndex((i) => i.product.id === product.id && i.variant?.id === variant?.id && !i.notes);
       if (idx >= 0) {
         const copy = [...prev];
         copy[idx] = { ...copy[idx], quantity: copy[idx].quantity + 1 };
@@ -205,6 +209,14 @@ export function PosPage() {
     setLocalCart((prev) =>
       quantity <= 0 ? prev.filter((i) => i.key !== key) : prev.map((i) => (i.key === key ? { ...i, quantity } : i))
     );
+  }
+
+  function handleNotesChange(key: string | number, notes: string) {
+    if (resumingTx) {
+      updateItem.mutate({ transactionId: resumingTx.id, itemId: key as number, notes });
+      return;
+    }
+    setLocalCart((prev) => prev.map((i) => (i.key === key ? { ...i, notes: notes || undefined } : i)));
   }
 
   function handleRemove(key: string | number) {
@@ -398,6 +410,7 @@ export function PosPage() {
             orderDiscountId={orderDiscountId}
             onOrderDiscountChange={handleOrderDiscountChange}
             onQtyChange={handleQtyChange}
+            onNotesChange={handleNotesChange}
             onRemove={handleRemove}
             onHold={!resumingTx && !selectedTable ? handleHold : undefined}
             onSendToTable={!resumingTx && selectedTable ? handleSendToTable : undefined}

@@ -6,6 +6,7 @@ export interface LocalCartItem {
   variant: ProductVariant | null;
   quantity: number;
   discount: Discount | null;
+  notes?: string;
 }
 
 export interface LinePreview {

@@ -137,6 +137,7 @@ export async function createDraft(cashierId: number, input: CreateDraftInput) {
             variantId: item.variantId,
             quantity: item.quantity,
             discountId: item.discountId,
+            notes: item.notes,
             unitPrice: 0,
             lineTotal: 0,
           })),
@@ -156,7 +157,7 @@ export async function createDraft(cashierId: number, input: CreateDraftInput) {
 export async function createOrAppendQrOrder(
   outletId: number,
   tableId: number,
-  items: { productId: number; variantId?: number; quantity: number }[],
+  items: { productId: number; variantId?: number; quantity: number; notes?: string }[],
   systemCashierId: number
 ) {
   return prisma.$transaction(async (tx) => {
@@ -182,6 +183,7 @@ export async function createOrAppendQrOrder(
             productId: item.productId,
             variantId: item.variantId,
             quantity: item.quantity,
+            notes: item.notes,
             unitPrice: 0,
             lineTotal: 0,
           },
@@ -200,6 +202,7 @@ export async function createOrAppendQrOrder(
               productId: item.productId,
               variantId: item.variantId,
               quantity: item.quantity,
+              notes: item.notes,
               unitPrice: 0,
               lineTotal: 0,
             })),
@@ -223,6 +226,7 @@ export async function addItem(transactionId: number, input: AddItemInput) {
         variantId: input.variantId,
         quantity: input.quantity,
         discountId: input.discountId,
+        notes: input.notes,
         unitPrice: 0,
         lineTotal: 0,
       },
@@ -252,6 +256,7 @@ export async function updateItem(transactionId: number, itemId: number, input: U
             variantId: item.variantId,
             quantity: input.quantity - item.quantity,
             discountId,
+            notes: input.notes !== undefined ? input.notes || null : item.notes,
             unitPrice: 0,
             lineTotal: 0,
           },
@@ -269,6 +274,7 @@ export async function updateItem(transactionId: number, itemId: number, input: U
       data: {
         quantity: input.quantity,
         discountId: input.discountId,
+        notes: input.notes === undefined ? undefined : input.notes || null,
       },
     });
     return recalculate(tx, transactionId);
@@ -550,6 +556,7 @@ export async function checkout(cashierId: number, input: CheckoutInput) {
             variantId: item.variantId,
             quantity: item.quantity,
             discountId: item.discountId,
+            notes: item.notes,
             unitPrice: 0,
             lineTotal: 0,
           })),

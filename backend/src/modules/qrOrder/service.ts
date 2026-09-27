@@ -42,6 +42,8 @@ async function getActiveOrderView(tableId: number) {
       unitPrice: item.unitPrice,
       lineTotal: item.lineTotal,
       prepStatus: item.prepStatus,
+      notes: item.notes,
+      kitchenPrintedAt: item.kitchenPrintedAt,
     })),
   };
 }
@@ -87,9 +89,28 @@ export async function getOrderStatus(token: string) {
 export async function submitOrder(token: string, items: SubmitOrderInput["items"]) {
   const table = await resolveTableByToken(token);
   const systemCashierId = await getOrCreateSystemUserId();
-  const order = await transactionsService.createOrAppendQrOrder(table.outletId, table.id, items, systemCashierId);
-  // Self-orders skip the cashier, so they go straight to the kitchen.
-  await sendToKitchenSafely(order.id, null);
+  // Staged only — the kitchen isn't notified until the customer explicitly
+  // confirms via confirmOrder, so they get a chance to review first.
+  await transactionsService.createOrAppendQrOrder(table.outletId, table.id, items, systemCashierId);
+  return {
+    table: { id: table.id, name: table.name },
+    order: await getActiveOrderView(table.id),
+  };
+}
+
+// Sends every staged-but-unsent item on the table's open order to the
+// kitchen. Distinct from submitOrder so customers get a review checkpoint
+// before their order becomes irreversible.
+export async function confirmOrder(token: string) {
+  const table = await resolveTableByToken(token);
+  const transaction = await prisma.transaction.findFirst({
+    where: { tableId: table.id, status: "OPEN" },
+    select: { id: true, _count: { select: { items: { where: { kitchenPrintedAt: null } } } } },
+  });
+  if (!transaction || transaction._count.items === 0) {
+    throw ApiError.badRequest("No new items to confirm");
+  }
+  await sendToKitchenSafely(transaction.id, null);
   return {
     table: { id: table.id, name: table.name },
     order: await getActiveOrderView(table.id),

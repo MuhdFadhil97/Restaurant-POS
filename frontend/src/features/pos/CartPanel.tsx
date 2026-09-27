@@ -12,6 +12,7 @@ export interface CartLineView {
   unitPrice: number;
   discountAmount: number;
   lineTotal: number;
+  notes?: string | null;
   // Saved on an open/held order but not yet sent to the kitchen.
   kitchenPending?: boolean;
 }
@@ -36,6 +37,7 @@ export function CartPanel({
   orderDiscountId,
   onOrderDiscountChange,
   onQtyChange,
+  onNotesChange,
   onRemove,
   onHold,
   onSendToTable,
@@ -57,6 +59,7 @@ export function CartPanel({
   orderDiscountId: number | null;
   onOrderDiscountChange: (id: number | null) => void;
   onQtyChange: (key: string | number, quantity: number) => void;
+  onNotesChange: (key: string | number, notes: string) => void;
   onRemove: (key: string | number) => void;
   onHold?: () => void;
   onSendToTable?: () => void;
@@ -97,6 +100,7 @@ export function CartPanel({
               </p>
               {line.variantLabel && <p className="text-xs text-gray-400">{line.variantLabel}</p>}
               <p className="text-xs text-gray-400">{money(line.unitPrice)} each</p>
+              <NoteField key={`${line.key}:${line.notes ?? ""}`} value={line.notes ?? ""} onCommit={(v) => onNotesChange(line.key, v)} />
             </div>
             <div className="flex items-center gap-1">
               <button
@@ -195,6 +199,27 @@ export function CartPanel({
         onSelect={onCustomerChange}
       />
     </div>
+  );
+}
+
+// Commits on blur/Enter, not per keystroke, so a resumed order doesn't fire a
+// PATCH for every character.
+function NoteField({ value, onCommit }: { value: string; onCommit: (value: string) => void }) {
+  const [draft, setDraft] = useState(value);
+  function commit() {
+    if (draft.trim() !== value) onCommit(draft.trim());
+  }
+  return (
+    <input
+      type="text"
+      value={draft}
+      maxLength={200}
+      onChange={(e) => setDraft(e.target.value)}
+      onBlur={commit}
+      onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
+      placeholder="Add note"
+      className="mt-1 w-full border-0 border-b border-dashed border-gray-200 bg-transparent px-0 py-0.5 text-xs text-gray-600 placeholder:text-gray-300 focus:border-brand-500 focus:outline-none focus:ring-0"
+    />
   );
 }
 

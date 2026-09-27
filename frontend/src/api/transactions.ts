@@ -37,7 +37,7 @@ interface DraftInput {
   customerId?: number;
   orderDiscountId?: number;
   notes?: string;
-  items?: { productId: number; variantId?: number; quantity: number; discountId?: number }[];
+  items?: { productId: number; variantId?: number; quantity: number; discountId?: number; notes?: string }[];
 }
 
 export function useCreateDraft() {
@@ -79,16 +79,19 @@ export function useUpdateItem() {
       itemId,
       quantity,
       discountId,
+      notes,
     }: {
       transactionId: number;
       itemId: number;
       quantity?: number;
       discountId?: number | null;
+      notes?: string | null;
     }) =>
       (
         await apiClient.patch<TransactionDto>(`/transactions/${transactionId}/items/${itemId}`, {
           quantity,
           discountId,
+          notes,
         })
       ).data,
     onSuccess: (data) => {

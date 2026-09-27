@@ -1,10 +1,19 @@
 import { z } from "zod";
 
+// Per-line note. Trimmed; blank becomes undefined so it's stored as NULL.
+export const itemNotes = z
+  .string()
+  .trim()
+  .max(200)
+  .optional()
+  .transform((v) => v || undefined);
+
 const itemInput = z.object({
   productId: z.coerce.number().int(),
   variantId: z.coerce.number().int().optional(),
   quantity: z.number().int().positive(),
   discountId: z.coerce.number().int().optional(),
+  notes: itemNotes,
 });
 
 const paymentInput = z.object({
@@ -47,6 +56,8 @@ export const addItemSchema = itemInput;
 export const updateItemSchema = z.object({
   quantity: z.number().int().positive().optional(),
   discountId: z.coerce.number().int().nullable().optional(),
+  // null / "" clears the note.
+  notes: z.string().trim().max(200).nullable().optional(),
 });
 
 export const updateTransactionSchema = z.object({

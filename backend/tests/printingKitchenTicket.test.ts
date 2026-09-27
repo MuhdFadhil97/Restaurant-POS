@@ -24,6 +24,14 @@ describe("kitchen ticket", () => {
     expect(t).not.toContain("ADDITIONAL");
   });
 
+  it("prints per-item notes under the item", () => {
+    const lines = [{ quantity: 1, productName: "Teh Tarik", variantValue: "Iced", notes: "less sugar" }, { quantity: 1, productName: "Roti" }];
+    const t = text(renderKitchenTicket({ charsPerLine: 48 }, { ...base, kind: "NEW", lines }));
+    expect(t).toContain("* less sugar");
+    expect(t.indexOf("- Iced")).toBeLessThan(t.indexOf("* less sugar"));
+    expect(t.indexOf("* less sugar")).toBeLessThan(t.indexOf("1 x Roti"));
+  });
+
   it("labels takeaway, follow-up and QR orders", () => {
     const t = text(renderKitchenTicket({ charsPerLine: 48 }, { ...base, origin: "QR", kind: "ADDITIONAL" }));
     expect(t).toContain("TAKEAWAY");

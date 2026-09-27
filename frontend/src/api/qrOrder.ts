@@ -22,8 +22,16 @@ export function useQrOrderStatus(token: string, enabled: boolean) {
 export function useSubmitQrOrder(token: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (items: { productId: number; variantId?: number; quantity: number }[]) =>
+    mutationFn: async (items: { productId: number; variantId?: number; quantity: number; notes?: string }[]) =>
       (await apiClient.post<QrOrderStatusResponse>(`/qr-order/${token}/items`, { items })).data,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["qr-order-status", token] }),
+  });
+}
+
+export function useConfirmQrOrder(token: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async () => (await apiClient.post<QrOrderStatusResponse>(`/qr-order/${token}/confirm`)).data,
     onSuccess: () => qc.invalidateQueries({ queryKey: ["qr-order-status", token] }),
   });
 }

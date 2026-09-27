@@ -289,6 +289,7 @@ export interface TransactionItemDto {
   discountAmount: number;
   taxAmount: number;
   lineTotal: number;
+  notes?: string | null;
   refundedQuantity?: number;
   prepStatus?: PrepStatus;
   preparingAt?: string | null;
@@ -722,6 +723,9 @@ export interface QrOrderItemView {
   unitPrice: number;
   lineTotal: number;
   prepStatus: PrepStatus;
+  notes: string | null;
+  // null until the item has been confirmed and sent out on a kitchen ticket.
+  kitchenPrintedAt: string | null;
 }
 
 export interface QrOrderView {

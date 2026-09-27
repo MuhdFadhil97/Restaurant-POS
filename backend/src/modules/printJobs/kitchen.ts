@@ -58,7 +58,12 @@ export async function sendToKitchen(transactionId: number, userId: number | null
       continue;
     }
     const group = byStation.get(station.id) ?? { stationName: station.name, printer, lines: [] };
-    group.lines.push({ quantity: item.quantity, productName: item.product.name, variantValue: item.variant?.value });
+    group.lines.push({
+      quantity: item.quantity,
+      productName: item.product.name,
+      variantValue: item.variant?.value,
+      notes: item.notes,
+    });
     byStation.set(station.id, group);
   }
 

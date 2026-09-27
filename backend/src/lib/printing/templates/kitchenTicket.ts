@@ -5,6 +5,7 @@ export interface KitchenTicketLine {
   quantity: number;
   productName: string;
   variantValue?: string | null;
+  notes?: string | null;
 }
 
 // Kitchen/bar order ticket: big, sparse, no prices — read at arm's length
@@ -61,6 +62,11 @@ export function renderKitchenTicket(
     doc.setTextNormal();
     doc.bold(false);
     if (line.variantValue) doc.println(`    - ${line.variantValue}`);
+    if (line.notes) {
+      doc.bold(true);
+      doc.println(`    * ${line.notes}`);
+      doc.bold(false);
+    }
   }
 
   if (ticket.notes && ticket.kind !== "CANCEL") {

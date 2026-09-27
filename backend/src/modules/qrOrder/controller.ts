@@ -13,3 +13,7 @@ export const getStatus = asyncHandler(async (req: Request, res: Response) => {
 export const submitOrder = asyncHandler(async (req: Request, res: Response) => {
   res.status(201).json(await service.submitOrder(req.params.token, req.body.items));
 });
+
+export const confirmOrder = asyncHandler(async (req: Request, res: Response) => {
+  res.json(await service.confirmOrder(req.params.token));
+});

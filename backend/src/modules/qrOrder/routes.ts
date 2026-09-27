@@ -5,7 +5,7 @@ import { submitOrderSchema, tokenParamsSchema } from "./validation";
 import * as controller from "./controller";
 
 // Public, unauthenticated router (see also einvoice/routes.ts). Keep its
-// surface to exactly these three read/create-only endpoints; anything else
+// surface to exactly these read/create-only endpoints; anything else
 // belongs behind `authenticate` in another module.
 const router = Router();
 
@@ -19,6 +19,12 @@ router.post(
   orderLimiter,
   validate({ params: tokenParamsSchema, body: submitOrderSchema }),
   controller.submitOrder
+);
+router.post(
+  "/:token/confirm",
+  orderLimiter,
+  validate({ params: tokenParamsSchema }),
+  controller.confirmOrder
 );
 
 export default router;

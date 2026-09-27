@@ -948,6 +948,10 @@ model TransactionItem {
   taxAmount      Decimal @default(0) @map("tax_amount") @db.Decimal(12, 2)
   lineTotal      Decimal @map("line_total") @db.Decimal(12, 2)
 
+  // Customer/cashier note for this line ("no ice", "less sugar"). Printed on
+  // the kitchen ticket; never affects price.
+  notes String?
+
   // How much of `quantity` has been refunded so far via RefundItem rows.
   // quantity - refundedQuantity is what's still eligible for a future refund.
   refundedQuantity Int @default(0) @map("refunded_quantity")

@@ -83,6 +83,7 @@ function KdsCard({ item, onAdvance }: { item: KdsQueueItem; onAdvance: (status: 
         {item.quantity}x {item.product.name}
       </p>
       {item.variant && <p className="text-sm text-gray-500">{item.variant.value}</p>}
+      {item.notes && <p className="text-sm font-semibold text-amber-700 break-words">Note: {item.notes}</p>}
       <p className="text-xs text-gray-400">{new Date(item.preparingAt ?? item.readyAt ?? item.servedAt ?? Date.now()).toLocaleTimeString()}</p>
       {next && (
         <Button className="mt-2" onClick={() => onAdvance(next)}>

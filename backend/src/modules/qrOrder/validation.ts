@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { itemNotes } from "../transactions/validation";
 
 export const tokenParamsSchema = z.object({
   token: z.string().min(16).max(64),
@@ -11,6 +12,7 @@ export const submitOrderSchema = z.object({
         productId: z.coerce.number().int(),
         variantId: z.coerce.number().int().optional(),
         quantity: z.number().int().positive(),
+        notes: itemNotes,
       })
     )
     .min(1),

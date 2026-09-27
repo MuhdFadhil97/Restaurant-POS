@@ -19,10 +19,12 @@ export function QrMenuPage() {
   const cart = useQrCartStore((s) => s.cartsByToken[token] ?? []);
   const addItem = useQrCartStore((s) => s.addItem);
   const setQuantity = useQrCartStore((s) => s.setQuantity);
+  const setNotes = useQrCartStore((s) => s.setNotes);
   const clearCart = useQrCartStore((s) => s.clearCart);
 
   const [categoryId, setCategoryId] = useState<number | "all">("all");
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [reviewing, setReviewing] = useState(false);
 
   const categories = useMemo(() => {
     if (!data) return [];
@@ -58,9 +60,15 @@ export function QrMenuPage() {
     setSubmitError(null);
     try {
       await submitOrder.mutateAsync(
-        cart.map((i) => ({ productId: i.productId, variantId: i.variantId, quantity: i.quantity }))
+        cart.map((i) => ({
+          productId: i.productId,
+          variantId: i.variantId,
+          quantity: i.quantity,
+          notes: i.notes?.trim() || undefined,
+        }))
       );
       clearCart(token);
+      setReviewing(false);
       navigate(`/order/${token}/status`);
     } catch (err) {
       setSubmitError(getErrorMessage(err));
@@ -129,14 +137,55 @@ export function QrMenuPage() {
       </div>
 
       {cart.length > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 shadow-lg">
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 shadow-lg max-h-[80vh] overflow-y-auto">
           {submitError && (
             <div className="mb-2">
               <ErrorMessage message={submitError} />
             </div>
           )}
+          {reviewing && (
+            <ul className="mb-3 divide-y divide-gray-100">
+              {cart.map((line) => (
+                <li key={line.key} className="py-2 space-y-1.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-gray-900 truncate">{line.name}</p>
+                      {line.variantLabel && <p className="text-xs text-gray-500">{line.variantLabel}</p>}
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        aria-label={`Decrease ${line.name}`}
+                        onClick={() => setQuantity(token, line.key, line.quantity - 1)}
+                        className="w-8 h-8 rounded-full bg-gray-100 text-gray-700"
+                      >
+                        −
+                      </button>
+                      <span className="w-5 text-center text-sm">{line.quantity}</span>
+                      <button
+                        aria-label={`Increase ${line.name}`}
+                        onClick={() => setQuantity(token, line.key, line.quantity + 1)}
+                        className="w-8 h-8 rounded-full bg-gray-100 text-gray-700"
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+                  <input
+                    type="text"
+                    value={line.notes ?? ""}
+                    maxLength={200}
+                    onChange={(e) => setNotes(token, line.key, e.target.value)}
+                    placeholder="Add a note (e.g. no ice, less sugar)"
+                    className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm"
+                  />
+                </li>
+              ))}
+            </ul>
+          )}
           <div className="flex items-center justify-between mb-2 text-sm text-gray-600">
-            <span>{cartCount} item{cartCount === 1 ? "" : "s"}</span>
+            <button className="underline" onClick={() => setReviewing((v) => !v)}>
+              {cartCount} item{cartCount === 1 ? "" : "s"} · {reviewing ? "Hide" : "Review & add notes"}
+            </button>
             <span className="font-semibold text-gray-900">{money(cartTotal)}</span>
           </div>
           <button
